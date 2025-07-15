@@ -4,42 +4,50 @@ import { toast } from 'sonner';
 import api from '../services/api';
 import Select from 'react-select';
 
+// Interface for a Branch
 interface Branch {
   id: number;
   name: string;
 }
 
+// Interface for a Seat
 interface Seat {
   id: number;
   seatNumber: string;
 }
 
+// Interface for a Schedule/Shift
 interface Schedule {
   id: number;
   title: string;
   description?: string | null;
   time: string;
   eventDate: string;
+  fee: number;
 }
 
+// Interface for a Locker
 interface Locker {
   id: number;
   lockerNumber: string;
   isAssigned: boolean;
 }
 
+// Interface for react-select options
 interface ShiftOption {
   value: number;
   label: string;
   isDisabled: boolean;
 }
 
+// Interface for generic react-select options
 interface SelectOption {
   value: number | null;
   label: string;
   isDisabled?: boolean;
 }
 
+// Interface for the form's state
 interface FormData {
   name: string;
   registrationNumber?: string;
@@ -65,10 +73,12 @@ interface FormData {
   aadhaarFrontUrl: string | null;
   aadhaarBack: File | null;
   aadhaarBackUrl: string | null;
+  discount: string;
 }
 
 const AddStudentForm: React.FC = () => {
   const navigate = useNavigate();
+  // State for form data
   const [formData, setFormData] = useState<FormData>({
     name: '',
     registrationNumber: '',
@@ -94,27 +104,41 @@ const AddStudentForm: React.FC = () => {
     aadhaarFrontUrl: null,
     aadhaarBack: null,
     aadhaarBackUrl: null,
+    discount: '0',
   });
+
+  // State for data fetched from API
   const [branches, setBranches] = useState<Branch[]>([]);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [shifts, setShifts] = useState<Schedule[]>([]);
   const [lockers, setLockers] = useState<Locker[]>([]);
   const [availableShifts, setAvailableShifts] = useState<Schedule[]>([]);
+
+  // State for loading indicators and errors
   const [loadingSeats, setLoadingSeats] = useState(false);
   const [loadingShifts, setLoadingShifts] = useState(false);
   const [loadingLockers, setLoadingLockers] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Effect to fetch initial data (branches and all shifts) when component mounts
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [branchesData, shiftsData] = await Promise.all([
+        const [branchData, shiftsData] = await Promise.all([
           api.getBranches(),
           api.getSchedules(),
         ]);
-        setBranches(branchesData);
-        setShifts(shiftsData.schedules);
-        setAvailableShifts(shiftsData.schedules);
+
+        // FIX: Use branchData directly as it is the array of branches
+        setBranches(branchData);
+        
+        // Map over schedules to ensure they have a 'fee' property
+        const formattedSchedules = shiftsData.schedules.map((schedule: any) => ({
+          ...schedule,
+          fee: schedule.fee ?? 0, // Default fee to 0 if not provided
+        }));
+        setShifts(formattedSchedules);
+        setAvailableShifts(formattedSchedules); // Initially, all shifts are available
         setError(null);
       } catch (error: any) {
         console.error('Failed to fetch initial data:', error);
@@ -125,6 +149,7 @@ const AddStudentForm: React.FC = () => {
     fetchInitialData();
   }, []);
 
+  // Effect to fetch seats and lockers when a branch is selected
   useEffect(() => {
     const fetchBranchSpecificData = async () => {
       if (formData.branchId !== null) {
@@ -154,33 +179,41 @@ const AddStudentForm: React.FC = () => {
     fetchBranchSpecificData();
   }, [formData.branchId]);
 
+  // Effect to fetch available shifts for a selected seat
   useEffect(() => {
     const fetchAvailableShifts = async () => {
-      if (formData.seatId !== null) {
-        setLoadingShifts(true);
-        try {
-          const availableShiftsResponse = await api.getAvailableShifts(formData.seatId);
-          setAvailableShifts(availableShiftsResponse.availableShifts);
-          setError(null);
-        } catch (error) {
-          console.error('Failed to fetch available shifts:', error);
-          setError('Failed to load available shifts. Check your permissions.');
-          toast.error('Failed to load shifts.');
-        } finally {
-          setLoadingShifts(false);
-        }
-      } else {
-        setAvailableShifts(shifts);
+      if (!formData.seatId) {
+        setAvailableShifts(shifts); // Reset to all shifts if no seat is selected
+        return;
+      }
+      setLoadingShifts(true);
+      try {
+        const availableShiftsResponse = await api.getAvailableShifts(formData.seatId);
+        
+        const formattedShifts = availableShiftsResponse.availableShifts.map((shift: any) => ({
+          ...shift,
+          fee: shift.fee ?? 0, // Default fee to 0 if not provided
+        }));
+        setAvailableShifts(formattedShifts);
+        setError(null);
+      } catch (error) {
+        console.error('Failed to fetch available shifts:', error);
+        setError('Failed to load available shifts. Check your permissions.');
+        toast.error('Failed to load shifts.');
+      } finally {
+        setLoadingShifts(false);
       }
     };
     fetchAvailableShifts();
   }, [formData.seatId, shifts]);
 
+  // Handle changes to standard input fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle changes to react-select dropdowns
   const handleSelectChange = (name: keyof FormData, option: SelectOption | ShiftOption | null) => {
     const value = option ? option.value : null;
     
@@ -191,6 +224,7 @@ const AddStudentForm: React.FC = () => {
         seatId: null,
         shiftId: null,
         lockerId: null,
+        totalFee: '',
       }));
     } else if (name === 'seatId') {
       setFormData(prev => ({
@@ -198,11 +232,19 @@ const AddStudentForm: React.FC = () => {
         seatId: value,
         shiftId: null,
       }));
+    } else if (name === 'shiftId') {
+      const selectedShift = shifts.find(shift => shift.id === value);
+      setFormData(prev => ({
+        ...prev,
+        shiftId: value,
+        totalFee: selectedShift ? selectedShift.fee.toString() : '',
+      }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
+  // Handle file input changes with validation
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : null;
     if (file) {
@@ -248,6 +290,7 @@ const AddStudentForm: React.FC = () => {
     }
   };
 
+  // Prepare options for react-select components
   const branchOptions: SelectOption[] = branches.map(branch => ({
     value: branch.id,
     label: branch.name,
@@ -274,8 +317,8 @@ const AddStudentForm: React.FC = () => {
   const shiftOptions: ShiftOption[] = shifts.map(shift => {
     const isAvailable = availableShifts.some(s => s.id === shift.id);
     const label = formData.seatId !== null
-      ? `${shift.title} (${shift.time} on ${shift.eventDate}) ${isAvailable ? '(Available)' : '(Assigned)'}`
-      : `${shift.title} (${shift.time} on ${shift.eventDate})`;
+      ? `${shift.title} - ${shift.description} ${isAvailable ? '(Available)' : '(Assigned)'}`
+      : `${shift.title} -  [${shift.description}] (${shift.fee})`;
     return {
       value: shift.id,
       label,
@@ -283,6 +326,7 @@ const AddStudentForm: React.FC = () => {
     };
   });
 
+  // Handle form submission
   const handleSubmit = async () => {
     if (
       !formData.name ||
@@ -296,48 +340,32 @@ const AddStudentForm: React.FC = () => {
     }
 
     try {
+      // Upload images and get their URLs
       let imageUrl = formData.imageUrl || '';
       if (formData.image) {
         const imageFormData = new FormData();
         imageFormData.append('image', formData.image);
-        try {
-          const uploadResponse = await api.uploadImage(imageFormData);
-          imageUrl = uploadResponse.imageUrl || '';
-        } catch (error: any) {
-          console.error('Profile image upload failed:', error);
-          toast.error(error.response?.data?.message || 'Failed to upload profile image');
-          return;
-        }
+        const uploadResponse = await api.uploadImage(imageFormData);
+        imageUrl = uploadResponse.imageUrl || '';
       }
 
       let aadhaarFrontUrl = formData.aadhaarFrontUrl || '';
       if (formData.aadhaarFront) {
         const frontFormData = new FormData();
         frontFormData.append('image', formData.aadhaarFront);
-        try {
-          const uploadResponse = await api.uploadImage(frontFormData);
-          aadhaarFrontUrl = uploadResponse.imageUrl || '';
-        } catch (error: any) {
-          console.error('Aadhaar front image upload failed:', error);
-          toast.error(error.response?.data?.message || 'Failed to upload Aadhaar front image');
-          return;
-        }
+        const uploadResponse = await api.uploadImage(frontFormData);
+        aadhaarFrontUrl = uploadResponse.imageUrl || '';
       }
 
       let aadhaarBackUrl = formData.aadhaarBackUrl || '';
       if (formData.aadhaarBack) {
         const backFormData = new FormData();
         backFormData.append('image', formData.aadhaarBack);
-        try {
-          const uploadResponse = await api.uploadImage(backFormData);
-          aadhaarBackUrl = uploadResponse.imageUrl || '';
-        } catch (error: any) {
-          console.error('Aadhaar back image upload failed:', error);
-          toast.error(error.response?.data?.message || 'Failed to upload Aadhaar back image');
-          return;
-        }
+        const uploadResponse = await api.uploadImage(backFormData);
+        aadhaarBackUrl = uploadResponse.imageUrl || '';
       }
 
+      // Prepare student data for API submission
       const studentData = {
         name: formData.name,
         registrationNumber: formData.registrationNumber || undefined,
@@ -354,6 +382,7 @@ const AddStudentForm: React.FC = () => {
         cash: parseFloat(formData.cash) || 0,
         online: parseFloat(formData.online) || 0,
         securityMoney: parseFloat(formData.securityMoney) || 0,
+        discount: parseFloat(formData.discount) || 0,
         remark: formData.remark || undefined,
         profileImageUrl: imageUrl || undefined,
         aadhaarFrontUrl: aadhaarFrontUrl || undefined,
@@ -372,19 +401,22 @@ const AddStudentForm: React.FC = () => {
     }
   };
 
+  // Calculated values for display
   const cashAmount = parseFloat(formData.cash) || 0;
   const onlineAmount = parseFloat(formData.online) || 0;
   const totalAmountPaid = cashAmount + onlineAmount;
-  const dueAmount = (parseFloat(formData.totalFee) || 0) - totalAmountPaid;
+  const effectiveTotalFee = (parseFloat(formData.totalFee) || 0) - (parseFloat(formData.discount) || 0);
+  const dueAmount = effectiveTotalFee - totalAmountPaid;
 
   return (
     <div className="max-w-2xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Add New Student</h1>
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <div className="space-y-4">
+        {/* Form Fields */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Name
+            Name *
           </label>
           <input
             type="text"
@@ -398,7 +430,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="registrationNumber" className="block text-sm font-medium text-gray-700 mb-1">
-            Registration Number
+            Registration Number *
           </label>
           <input
             type="text"
@@ -450,7 +482,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            Phone
+            Phone *
           </label>
           <input
             type="text"
@@ -464,7 +496,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-            Address
+            Address *
           </label>
           <input
             type="text"
@@ -477,7 +509,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="branchId" className="block text-sm font-medium text-gray-700 mb-1">
-            Branch
+            Branch *
           </label>
           <Select
             options={branchOptions}
@@ -491,7 +523,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="membershipStart" className="block text-sm font-medium text-gray-700 mb-1">
-            Membership Start
+            Membership Start *
           </label>
           <input
             type="date"
@@ -505,7 +537,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="membershipEnd" className="block text-sm font-medium text-gray-700 mb-1">
-            Membership End
+            Membership End *
           </label>
           <input
             type="date"
@@ -519,7 +551,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="seatId" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Seat
+            Select Seat *
           </label>
           <Select
             options={seatOptions}
@@ -533,7 +565,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="shiftId" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Shift
+            Select Shift *
           </label>
           <Select
             options={shiftOptions}
@@ -542,7 +574,7 @@ const AddStudentForm: React.FC = () => {
             isLoading={loadingShifts}
             placeholder="Select a shift"
             className="w-full"
-            isDisabled={availableShifts.length === 0} // Updated to allow shift selection even when seat is none
+            isDisabled={availableShifts.length === 0}
           />
         </div>
         <div>
@@ -561,13 +593,28 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">
-            Total Fee
+            Total Fee *
           </label>
           <input
             type="number"
             id="totalFee"
             name="totalFee"
             value={formData.totalFee}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+          />
+        </div>
+        <div>
+          <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
+            Discount
+          </label>
+          <input
+            type="number"
+            id="discount"
+            name="discount"
+            value={formData.discount}
             onChange={handleChange}
             step="0.01"
             min="0"

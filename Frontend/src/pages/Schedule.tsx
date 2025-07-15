@@ -10,6 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCaption,
 } from '@/components/ui/table';
 import {
   Dialog,
@@ -17,36 +18,73 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, X, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Trash2, X, Loader2, Pencil, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../services/api';
 
-// Align with Schedule interface from api.ts
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+          <Card className="p-6 shadow-lg border-gray-200 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-red-600">Something Went Wrong</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-400">
+                An error occurred while loading the schedule. Please try refreshing the page or contact support if the issue persists.
+              </p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                Refresh Page
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 interface ScheduleEvent {
   id: number;
   title: string;
   description: string | null;
-  time: string; // e.g., "14:30"
-  eventDate: string; // e.g., "2025-05-27"
+  time: string;
+  eventDate: string;
+  fee: number;
 }
 
-// Helper to format time string (e.g., "14:30") to AM/PM
+const parseValidDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const formatTimeForDisplay = (timeString: string | null | undefined): string => {
   if (!timeString || !timeString.includes(':')) return 'N/A';
-  const parts = timeString.split(':');
-  if (parts.length < 2) return 'Invalid time'; 
-  
-  const hour = parseInt(parts[0], 10);
-  const minute = parseInt(parts[1], 10);
-
+  const [hour, minute] = timeString.split(':').map(Number);
   if (isNaN(hour) || isNaN(minute)) return 'Invalid time';
 
   const date = new Date();
-  date.setHours(hour);
-  date.setMinutes(minute);
-  date.setSeconds(0);
+  date.setHours(hour, minute, 0);
 
   return new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
@@ -55,9 +93,8 @@ const formatTimeForDisplay = (timeString: string | null | undefined): string => 
   }).format(date);
 };
 
-// Helper to format YYYY-MM-DD string to a more readable format
-const formatDateForDisplay = (dateStr: string): string => {
-  const date = new Date(dateStr + 'T00:00:00');
+const formatDateForDisplay = (dateStr: string | Date): string => {
+  const date = typeof dateStr === 'string' ? new Date(dateStr + 'T00:00:00') : dateStr;
   if (isNaN(date.getTime())) return "Invalid Date";
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
@@ -67,17 +104,22 @@ const formatDateForDisplay = (dateStr: string): string => {
 };
 
 const SchedulePage: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined); // No default date
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<ScheduleEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<ScheduleEvent | null>(null);
 
   const initialNewEventState = {
     title: '',
-    date: new Date(), // Default to today for the form
+    date: new Date(),
     time: '',
     description: '',
+    fee: 0,
   };
   const [newEvent, setNewEvent] = useState(initialNewEventState);
 
@@ -85,8 +127,21 @@ const SchedulePage: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await api.getSchedules();
-      setEvents(response.schedules); // Directly use response.schedules
+      console.log('Raw API Response:', response);
+      const schedules = Array.isArray(response.schedules) ? response.schedules : Array.isArray(response) ? response : [];
+      const formattedSchedules = schedules
+        .filter(schedule => schedule && typeof schedule === 'object') // Ensure valid objects
+        .map((schedule: any) => ({
+          id: schedule.id,
+          title: schedule.title || '',
+          description: schedule.description ?? '',
+          time: schedule.time || '',
+          eventDate: schedule.eventDate || '', // Rely on camelCase from interceptor
+          fee: parseFloat(schedule.fee) || 0,
+        }));
+      setEvents(formattedSchedules);
     } catch (error: any) {
+      console.error('Error caught in fetchEvents:', error);
       toast.error(error.message || 'Failed to load events');
       setEvents([]);
     } finally {
@@ -104,51 +159,87 @@ const SchedulePage: React.FC = () => {
       return;
     }
 
-    const eventDateForPayload = newEvent.date || new Date();
-    const year = eventDateForPayload.getFullYear();
-    const month = String(eventDateForPayload.getMonth() + 1).padStart(2, '0');
-    const day = String(eventDateForPayload.getDate()).padStart(2, '0');
-    const dateStrYYYYMMDD = `${year}-${month}-${day}`;
+    const eventDate = newEvent.date instanceof Date && !isNaN(newEvent.date.getTime()) ? newEvent.date : new Date();
+    const dateStrYYYYMMDD = eventDate.toISOString().split('T')[0];
 
     const scheduleDataToSend = {
       title: newEvent.title.trim(),
       description: newEvent.description.trim() || null,
       time: newEvent.time,
-      eventDate: dateStrYYYYMMDD,
+      eventDate: dateStrYYYYMMDD, // Ensure YYYY-MM-DD format
+      fee: newEvent.fee,
     };
 
+    console.log('Sending add event data:', scheduleDataToSend); // Debug log
     setIsLoading(true);
     try {
       await api.addSchedule(scheduleDataToSend);
       await fetchEvents();
-      setIsAddEventOpen(false);
+      setIsAddDialogOpen(false);
       setNewEvent(initialNewEventState);
-      toast.success('Event added to schedule!');
+      toast.success('Event added successfully!');
     } catch (error: any) {
+      console.error('Error in handleAddEventSubmit:', error);
       toast.error(error.message || 'Failed to add event.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteEvent = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      setIsLoading(true);
-      try {
-        await api.deleteSchedule(id);
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
-        toast.success('Event removed from schedule.');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to delete event.');
-      } finally {
-        setIsLoading(false);
-      }
+  const handleUpdateEventSubmit = async () => {
+    if (!eventToEdit) return;
+
+    // Normalize eventDate to YYYY-MM-DD format
+    const normalizedEventDate = parseValidDate(eventToEdit.eventDate);
+    const dateStrYYYYMMDD = normalizedEventDate ? normalizedEventDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+    const updatedEvent = {
+      ...eventToEdit,
+      eventDate: dateStrYYYYMMDD,
+    };
+
+    console.log('Sending update event data:', updatedEvent); // Debug log
+    setIsLoading(true);
+    try {
+      const { id, title, description, time, fee, eventDate } = updatedEvent;
+      await api.updateSchedule(id, {
+        title,
+        description,
+        time,
+        eventDate,
+        fee,
+      });
+      await fetchEvents();
+      setIsEditDialogOpen(false);
+      setEventToEdit(null);
+      toast.success('Event updated successfully!');
+    } catch (error: any) {
+      console.error('Error in handleUpdateEventSubmit:', error);
+      toast.error(error.message || 'Failed to update event.');
+    } finally {
+      setIsLoading(false);
     }
   };
   
+  const handleDeleteConfirm = async () => {
+    if (!eventToDelete) return;
+    setIsLoading(true);
+    try {
+      await api.deleteSchedule(eventToDelete.id);
+      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventToDelete.id));
+      toast.success('Event removed from schedule.');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete event.');
+    } finally {
+      setIsLoading(false);
+      setEventToDelete(null);
+    }
+  };
+
   const filteredEvents = selectedDate
     ? events.filter(event => {
-        const eventDateObj = new Date(event.eventDate + 'T00:00:00');
+        const eventDateObj = parseValidDate(event.eventDate);
+        if (!eventDateObj) return false;
         return (
           eventDateObj.getFullYear() === selectedDate.getFullYear() &&
           eventDateObj.getMonth() === selectedDate.getMonth() &&
@@ -158,169 +249,181 @@ const SchedulePage: React.FC = () => {
     : events;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">Schedule</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your daily activities and classes</p>
+    <ErrorBoundary>
+      <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+        <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Navbar />
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Schedules & Events</h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">Manage your daily activities and classes.</p>
               </div>
-            </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Calendar and Add Event Button */}
-              <div className="lg:w-1/3 w-full">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold dark:text-gray-200">Calendar</h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setNewEvent({ ...initialNewEventState, date: selectedDate || new Date() });
-                        setIsAddEventOpen(true);
-                      }}
-                      disabled={isLoading}
-                      className="flex items-center"
-                    >
-                      <Plus size={16} className="mr-1" /> Add Event
-                    </Button>
-                  </div>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="p-0 rounded-md [&_td]:w-10 [&_td]:h-10 [&_th]:w-10"
-                  />
-                  {selectedDate && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 w-full text-sm flex items-center justify-center text-red-500 hover:text-red-600"
-                      onClick={() => setSelectedDate(undefined)}
-                      disabled={isLoading}
-                    >
-                      <X size={14} className="mr-1" /> Clear Date Selection
-                    </Button>
-                  )}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-1 space-y-8">
+                  <Card className="shadow-lg border-gray-200 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>Calendar</span>
+                        <CalendarIcon className="h-5 w-5 text-gray-400" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        className="p-0"
+                      />
+                      <div className="mt-4 space-y-2">
+                        <Button
+                          onClick={() => {
+                            setNewEvent({ ...initialNewEventState, date: selectedDate || new Date() });
+                            setIsAddDialogOpen(true);
+                          }}
+                          disabled={isLoading}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                          <Plus size={18} className="mr-2" /> Add New Event
+                        </Button>
+                        {selectedDate && (
+                          <Button
+                            variant="ghost"
+                            className="w-full text-red-500 hover:text-red-600"
+                            onClick={() => setSelectedDate(undefined)}
+                            disabled={isLoading}
+                          >
+                            <X size={16} className="mr-2" /> Clear Selection
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </div>
 
-              {/* Events List */}
-              <div className="lg:w-2/3 w-full">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
-                  <div className="p-4 border-b dark:border-gray-700">
-                    <h3 className="text-lg font-semibold dark:text-gray-200">
-                      {selectedDate ? `Events for ${formatDateForDisplay(selectedDate.toISOString().split('T')[0])}` : 'All Upcoming Events'}
-                    </h3>
-                  </div>
-                  {isLoading && <div className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin text-purple-600" /></div>}
-                  {!isLoading && filteredEvents.length === 0 && (
-                    <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                      {selectedDate ? 'No events scheduled for this date.' : 'No events found.'}
-                    </div>
-                  )}
-                  {!isLoading && filteredEvents.length > 0 && (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Event</TableHead>
-                            <TableHead>Time</TableHead>
-                            <TableHead className="hidden md:table-cell">Description</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredEvents.map((event) => (
-                            <TableRow key={event.id}>
-                              <TableCell className="font-medium">{event.title}</TableCell>
-                              <TableCell>{formatTimeForDisplay(event.time)}</TableCell>
-                              <TableCell className="hidden md:table-cell max-w-xs truncate">{event.description || '-'}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700"
-                                  onClick={() => handleDeleteEvent(event.id)}
-                                  disabled={isLoading}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </TableCell>
+                <div className="lg:col-span-2">
+                  <Card className="shadow-lg border-gray-200 dark:border-gray-700">
+                    <CardHeader>
+                      <CardTitle>
+                        {selectedDate ? `Events for ${formatDateForDisplay(selectedDate)}` : 'All Upcoming Events'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <div className="py-12 flex justify-center items-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableCaption>
+                            {filteredEvents.length === 0 ? 'No events to display.' : 'A list of your scheduled events.'}
+                          </TableCaption>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[150px]">Event</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Fee</TableHead>
+                              <TableHead className="hidden md:table-cell">Description</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                          </TableHeader>
+                          <TableBody>
+                            {filteredEvents.map((event) => (
+                              <TableRow key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                <TableCell className="font-medium">{event.title}</TableCell>
+                                <TableCell>{formatTimeForDisplay(event.time)}</TableCell>
+                                <TableCell>₹{event.fee.toFixed(2)}</TableCell>
+                                <TableCell className="hidden md:table-cell max-w-xs truncate">{event.description || '—'}</TableCell>
+                                <TableCell className="text-right space-x-1">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700" onClick={() => { setEventToEdit(event); setIsEditDialogOpen(true); }}>
+                                    <Pencil size={16} />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => setEventToDelete(event)}>
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+        </div>
 
-      {/* Add Event Dialog */}
-      <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
-        <DialogContent className="sm:max-w-[425px] dark:bg-gray-800">
-          <DialogHeader>
-            <DialogTitle className="dark:text-white">Add New Event</DialogTitle>
-            <DialogDescription>Fill in the details for your new schedule event.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="eventTitle" className="text-right col-span-1 dark:text-gray-300">Title*</label>
-              <Input
-                id="eventTitle"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                placeholder="Team Meeting"
-              />
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="sm:max-w-[480px] dark:bg-gray-800">
+            <DialogHeader>
+              <DialogTitle>Add New Event</DialogTitle>
+              <DialogDescription>Fill in the details for your new schedule event.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <Input id="eventTitle" placeholder="Event Title" value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} />
+              <Input id="eventTime" type="time" value={newEvent.time} onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })} />
+              <Input id="eventFee" type="number" placeholder="Fee" value={newEvent.fee} onChange={(e) => setNewEvent({ ...newEvent, fee: parseFloat(e.target.value) || 0 })} />
+              <Textarea id="eventDescription" placeholder="Description (optional)" value={newEvent.description || ''} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} />
+              <div className="text-sm text-gray-500 dark:text-gray-400">Date: {formatDateForDisplay(newEvent.date)}</div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="eventDate" className="text-right col-span-1 dark:text-gray-300">Date*</label>
-              <div className="col-span-3 p-2 border rounded-md dark:border-gray-600 dark:text-gray-300">
-                {newEvent.date ? formatDateForDisplay(newEvent.date.toISOString().split('T')[0]) : 'Select on calendar'}
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleAddEventSubmit} disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2"/>} Add Event
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[480px] dark:bg-gray-800">
+            <DialogHeader>
+              <DialogTitle>Edit Event</DialogTitle>
+              <DialogDescription>Update the details for this schedule event.</DialogDescription>
+            </DialogHeader>
+            {eventToEdit && (
+              <div className="grid gap-4 py-4">
+                <Input id="editEventTitle" placeholder="Event Title" value={eventToEdit.title} onChange={(e) => setEventToEdit({ ...eventToEdit, title: e.target.value })} />
+                <Input id="editEventTime" type="time" value={eventToEdit.time} onChange={(e) => setEventToEdit({ ...eventToEdit, time: e.target.value })} />
+                <Input id="editEventFee" type="number" placeholder="Fee" value={eventToEdit.fee} onChange={(e) => setEventToEdit({ ...eventToEdit, fee: parseFloat(e.target.value) || 0 })} />
+                <Textarea id="editEventDescription" placeholder="Description (optional)" value={eventToEdit.description || ''} onChange={(e) => setEventToEdit({ ...eventToEdit, description: e.target.value })} />
+                <div className="text-sm text-gray-500 dark:text-gray-400">Date: {formatDateForDisplay(eventToEdit.eventDate)}</div>
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="eventTime" className="text-right col-span-1 dark:text-gray-300">Time*</label>
-              <Input
-                id="eventTime"
-                type="time"
-                value={newEvent.time}
-                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="eventDescription" className="text-right col-span-1 dark:text-gray-300">Description</label>
-              <Input
-                id="eventDescription"
-                value={newEvent.description}
-                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                placeholder="Optional details"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setIsAddEventOpen(false)} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddEventSubmit} disabled={isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1"/> : null} Add Event
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+            )}
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleUpdateEventSubmit} disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2"/>} Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!eventToDelete} onOpenChange={() => setEventToDelete(null)}>
+          <DialogContent className="sm:max-w-md dark:bg-gray-800">
+            <DialogHeader>
+              <DialogTitle>Are you absolutely sure?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. This will permanently delete the event
+                <span className="font-bold"> "{eventToDelete?.title}"</span>.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="sm:justify-end">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="button" variant="destructive" onClick={handleDeleteConfirm} disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2"/>} Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -105,6 +105,7 @@ interface Schedule {
   description?: string | null;
   time: string;
   eventDate: string;
+  fee: number; // <-- Add this line
 }
 
 interface DashboardStats {
@@ -594,7 +595,9 @@ const api = {
 
   getSchedules: async (): Promise<{ schedules: Schedule[] }> => {
     const response = await apiClient.get('/schedules');
-    return response.data;
+    // Ensure the response is wrapped in { schedules: ... } if it's a flat array
+    const data = Array.isArray(response.data) ? { schedules: response.data } : response.data;
+    return data;
   },
 
   getSchedule: async (id: number): Promise<Schedule> => {
@@ -612,12 +615,18 @@ const api = {
     }
   },
 
-  addSchedule: async (scheduleData: { title: string; time: string; eventDate: string; description?: string }): Promise<Schedule> => {
+  addSchedule: async (scheduleData: { 
+    title: string; 
+    time: string; 
+    eventDate: string; 
+    description?: string;
+    fee?: number; // <-- Add this line
+  }): Promise<Schedule> => {
     const response = await apiClient.post('/schedules', scheduleData);
     return response.data;
   },
 
-  updateSchedule: async (id: number, scheduleData: { title?: string; time?: string; eventDate?: string; description?: string }): Promise<Schedule> => {
+  updateSchedule: async (id: number, scheduleData: { title?: string; time?: string; eventDate?: string; description?: string; fee?: number }): Promise<Schedule> => {
     const response = await apiClient.put(`/schedules/${id}`, scheduleData);
     return response.data;
   },

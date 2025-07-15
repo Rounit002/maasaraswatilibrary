@@ -116,7 +116,7 @@ const ShiftList: React.FC = () => {
                               {formatDate(shift.eventDate)}
                             </TableCell>
                             <TableCell className="text-gray-600 dark:text-gray-400">
-                              {formatTime(shift.time)} {/* Fixed: Use shift.time instead of description */}
+                              {(shift.description)} {/* Fixed: Use shift.time instead of description */}
                             </TableCell>
                             <TableCell className="text-right">
                               <Link

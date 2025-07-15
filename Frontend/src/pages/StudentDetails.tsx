@@ -27,6 +27,7 @@ interface Student {
   cash: number;
   online: number;
   securityMoney: number;
+  discount?: number | null; // Added discount field
   remark?: string | null;
   profileImageUrl?: string | null;
   aadhaarFrontUrl?: string | null;
@@ -83,6 +84,7 @@ const StudentDetails: React.FC = () => {
           cash: studentData.cash,
           online: studentData.online,
           securityMoney: studentData.securityMoney ?? 0,
+          discount: studentData.discount ?? 0, // Set default discount if null
         });
 
         setError(null);
@@ -211,12 +213,11 @@ const StudentDetails: React.FC = () => {
                   </div>
                 )}
                 <img
-                src={MaaSaraswatiLibBanner}
-                alt="SDM Library Logo"
-                className="print-logo hidden print:block"
+                  src={MaaSaraswatiLibBanner}
+                  alt="SDM Library Logo"
+                  className="print-logo hidden print:block"
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  
                   <div>
                     <h2 className="text-lg font-medium">Name</h2>
                     <p className="text-gray-600">{student.name || 'Unknown'}</p>
@@ -311,6 +312,12 @@ const StudentDetails: React.FC = () => {
                     <h2 className="text-lg font-medium">Security Money</h2>
                     <p className="text-gray-600">
                       {student.securityMoney !== undefined && student.securityMoney !== null ? `Rs. ${student.securityMoney.toFixed(2)}` : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium">Discount</h2> {/* Added discount field */}
+                    <p className="text-gray-600">
+                      {student.discount !== undefined && student.discount !== null ? `Rs. ${student.discount.toFixed(2)}` : 'N/A'}
                     </p>
                   </div>
                   <div>

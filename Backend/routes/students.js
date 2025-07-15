@@ -3,7 +3,6 @@ module.exports = (pool) => {
   const { checkAdmin, checkAdminOrStaff } = require('./auth');
   const { checkPermissions } = require('./auth');
 
-  // A helper function to add the dynamic status to the query
   const withCalculatedStatus = (selectFields = 's.*') => `
     SELECT
       ${selectFields},
@@ -14,7 +13,6 @@ module.exports = (pool) => {
     FROM students s
   `;
 
-  // GET all students (with calculated status, created_at, seat number, and locker number)
   router.get('/', checkAdminOrStaff, async (req, res) => {
     try {
       const { branchId } = req.query;
@@ -26,6 +24,7 @@ module.exports = (pool) => {
           s.is_active, s.profile_image_url, s.aadhaar_front_url, s.aadhaar_back_url,
           TO_CHAR(s.membership_end, 'YYYY-MM-DD') AS membership_end,
           TO_CHAR(s.created_at, 'YYYY-MM-DD') AS created_at,
+          s.discount,
           CASE
             WHEN s.membership_end < CURRENT_DATE THEN 'expired'
             ELSE 'active'
@@ -51,7 +50,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET inactive students
   router.get('/inactive', checkAdminOrStaff, async (req, res) => {
     try {
       const result = await pool.query(`
@@ -68,7 +66,6 @@ module.exports = (pool) => {
     }
   });
 
-  // PUT to update a student's active/inactive status
   router.put('/:id/status', checkAdminOrStaff, async (req, res) => {
     const client = await pool.connect();
     try {
@@ -89,7 +86,6 @@ module.exports = (pool) => {
         return res.status(404).json({ message: 'Student not found.' });
       }
 
-      // If student is being made inactive, remove their seat and locker assignments
       if (is_active === false) {
         await client.query('DELETE FROM seat_assignments WHERE student_id = $1', [id]);
         await client.query('UPDATE students SET locker_id = NULL WHERE id = $1', [id]);
@@ -98,7 +94,6 @@ module.exports = (pool) => {
       
       await client.query('COMMIT');
       res.json({ student: updatedStudent.rows[0], message: `Student status updated to ${is_active ? 'active' : 'inactive'}.` });
-
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('Error updating student status:', err);
@@ -108,7 +103,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET active students
   router.get('/active', checkAdminOrStaff, async (req, res) => {
     try {
       const { branchId } = req.query;
@@ -134,6 +128,7 @@ module.exports = (pool) => {
         cash: parseFloat(student.cash || 0),
         online: parseFloat(student.online || 0),
         security_money: parseFloat(student.security_money || 0),
+        discount: parseFloat(student.discount || 0),
         remark: student.remark || '',
         profile_image_url: student.profile_image_url || '',
         aadhaar_front_url: student.aadhaar_front_url || '',
@@ -146,7 +141,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET expired students
   router.get('/expired', checkAdminOrStaff, async (req, res) => {
     try {
       const { branchId } = req.query;
@@ -188,6 +182,7 @@ module.exports = (pool) => {
         cash: parseFloat(student.cash || 0),
         online: parseFloat(student.online || 0),
         security_money: parseFloat(student.security_money || 0),
+        discount: parseFloat(student.discount || 0),
         remark: student.remark || '',
         profile_image_url: student.profile_image_url || '',
         aadhaar_front_url: student.aadhaar_front_url || '',
@@ -200,7 +195,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET students expiring soon
   router.get('/expiring-soon', checkAdminOrStaff, async (req, res) => {
     try {
       const { branchId } = req.query;
@@ -245,7 +239,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET a single student by ID
   router.get('/:id', checkAdminOrStaff, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -285,6 +278,7 @@ module.exports = (pool) => {
         cash: parseFloat(studentData.cash || 0),
         online: parseFloat(studentData.online || 0),
         security_money: parseFloat(studentData.security_money || 0),
+        discount: parseFloat(studentData.discount || 0),
         remark: studentData.remark || '',
         profile_image_url: studentData.profile_image_url || '',
         aadhaar_front_url: studentData.aadhaar_front_url || '',
@@ -298,7 +292,6 @@ module.exports = (pool) => {
     }
   });
 
-  // GET students by shift ID
   router.get('/shift/:shiftId', checkAdminOrStaff, async (req, res) => {
     try {
       const { shiftId } = req.params;
@@ -322,6 +315,7 @@ module.exports = (pool) => {
           s.aadhaar_front_url,
           s.aadhaar_back_url,
           s.membership_end,
+          s.discount,
           l.locker_number,
           CASE
             WHEN s.membership_end < CURRENT_DATE THEN 'expired'
@@ -352,17 +346,14 @@ module.exports = (pool) => {
       query += ` ORDER BY s.name`;
 
       const result = await pool.query(query, params);
-      
       res.json({ students: result.rows });
-
     } catch (err) {
       console.error(`Error fetching students for shift ${req.params.shiftId}:`, err);
       res.status(500).json({ message: 'Server error', error: err.message });
     }
   });
 
-  // POST a new student
-router.post('/', checkPermissions(['manage_library_students']), async (req, res) => {
+  router.post('/', checkPermissions(['manage_library_students']), async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -370,7 +361,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
       const {
         name, email, phone, address, branch_id, membership_start, membership_end,
         total_fee, amount_paid, shift_ids, seat_id, cash, online, security_money, remark, profile_image_url,
-        registration_number, father_name, aadhar_number, locker_id, aadhaar_front_url, aadhaar_back_url
+        registration_number, father_name, aadhar_number, locker_id, aadhaar_front_url, aadhaar_back_url, discount
       } = req.body;
 
       console.log('Received request body for POST /students:', req.body);
@@ -388,6 +379,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
 
       const feeValue = parseFloat(total_fee || 0);
       const paidValue = parseFloat(amount_paid || 0);
+      const discountValue = parseFloat(discount || 0);
       if (isNaN(feeValue) || feeValue < 0) {
         console.error('Validation failed: Total fee invalid', { total_fee });
         await client.query('ROLLBACK');
@@ -397,6 +389,11 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         console.error('Validation failed: Amount paid invalid', { amount_paid });
         await client.query('ROLLBACK');
         return res.status(400).json({ message: 'Amount paid must be a valid non-negative number' });
+      }
+      if (isNaN(discountValue) || discountValue < 0) {
+        console.error('Validation failed: Discount invalid', { discount });
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Discount must be a valid non-negative number' });
       }
 
       const cashValue = cash !== undefined ? parseFloat(cash) : 0;
@@ -419,7 +416,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         return res.status(400).json({ message: 'Security money must be a valid non-negative number' });
       }
 
-      const dueAmount = feeValue - paidValue;
+      const dueAmount = feeValue - discountValue - paidValue;
 
       if (seatIdNum && shiftIdsNum.length > 0) {
         const seatCheck = await client.query('SELECT 1 FROM seats WHERE id = $1', [seatIdNum]);
@@ -472,14 +469,15 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           name, email, phone, address, branch_id, membership_start, membership_end,
           total_fee, amount_paid, due_amount, cash, online, security_money, remark, 
           profile_image_url, aadhaar_front_url, aadhaar_back_url, status, locker_id,
-          registration_number, father_name, aadhar_number
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
-        RETURNING *`,
+          registration_number, father_name, aadhar_number, discount, is_active, created_at
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW()
+        ) RETURNING *`,
         [
           name, email, phone, address, branchIdNum, membership_start, membership_end,
           feeValue, paidValue, dueAmount, cashValue, onlineValue, securityMoneyValue, remark || null, 
           profile_image_url || null, aadhaar_front_url || null, aadhaar_back_url || null, status, lockerIdNum,
-          registration_number || null, father_name || null, aadhar_number || null
+          registration_number || null, father_name || null, aadhar_number || null, discountValue, true
         ]
       );
       const student = result.rows[0];
@@ -511,8 +509,8 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           seat_id, shift_id, branch_id,
           registration_number, father_name, aadhar_number,
           profile_image_url, aadhaar_front_url, aadhaar_back_url,
-          locker_id, changed_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())`,
+          locker_id, discount, changed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())`,
         [
           student.id, student.name, student.email, student.phone, student.address,
           student.membership_start, student.membership_end, student.status,
@@ -521,7 +519,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           seatIdNum, firstShiftId, branchIdNum,
           student.registration_number, student.father_name, student.aadhar_number,
           student.profile_image_url || '', student.aadhaar_front_url || '', student.aadhaar_back_url || '',
-          lockerIdNum
+          lockerIdNum, student.discount
         ]
       );
 
@@ -536,6 +534,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           cash: parseFloat(student.cash || 0),
           online: parseFloat(student.online || 0),
           security_money: parseFloat(student.security_money || 0),
+          discount: parseFloat(student.discount || 0),
           remark: student.remark || '',
           profile_image_url: student.profile_image_url || '',
           aadhaar_front_url: student.aadhaar_front_url || '',
@@ -551,7 +550,6 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
     }
   });
 
-  // PUT update a student
   router.put('/:id', checkAdminOrStaff, async (req, res) => {
     const client = await pool.connect();
     try {
@@ -562,7 +560,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         name, email, phone, address, branch_id, membership_start, membership_end,
         total_fee, amount_paid, shift_ids, seat_id, cash, online, security_money, remark,
         registration_number, father_name, aadhar_number, profile_image_url, locker_id,
-        aadhaar_front_url, aadhaar_back_url
+        aadhaar_front_url, aadhaar_back_url, discount
       } = req.body;
       
       if (!name || !phone || !address || !branch_id || !membership_start || !membership_end) {
@@ -574,7 +572,10 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
       const lockerIdNum = locker_id ? parseInt(locker_id, 10) : null;
       const shiftIdsNum = shift_ids && Array.isArray(shift_ids) ? shift_ids.map(sid => parseInt(sid, 10)) : [];
       
-      const dueAmountValue = parseFloat(total_fee) - parseFloat(amount_paid);
+      const feeValue = parseFloat(total_fee || 0);
+      const paidValue = parseFloat(amount_paid || 0);
+      const discountValue = parseFloat(discount || 0);
+      const dueAmountValue = feeValue - discountValue - paidValue;
       const status = new Date(membership_end) < new Date() ? 'expired' : 'active';
 
       if (lockerIdNum) {
@@ -589,14 +590,12 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         }
       }
 
-      // Clear previous locker assignment
       const previouslockerCheck = await client.query('SELECT locker_id FROM students WHERE id = $1', [id]);
       const previouslockerId = previouslockerCheck.rows[0].locker_id;
       if (previouslockerId) {
         await client.query('UPDATE locker SET is_assigned = false, student_id = NULL WHERE id = $1', [previouslockerId]);
       }
 
-      // Update the primary students table
       const result = await client.query(
         `UPDATE students 
          SET name = $1, email = $2, phone = $3, address = $4, branch_id = $5,
@@ -604,15 +603,15 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
              amount_paid = $9, due_amount = $10, cash = $11, online = $12, 
              security_money = $13, remark = $14, status = $15,
              registration_number = $16, father_name = $17, aadhar_number = $18, 
-             profile_image_url = $19, locker_id = $20, aadhaar_front_url = $21, aadhaar_back_url = $22
-         WHERE id = $23
+             profile_image_url = $19, locker_id = $20, aadhaar_front_url = $21, aadhaar_back_url = $22, discount = $23
+         WHERE id = $24
          RETURNING *`,
         [
           name, email, phone, address, branch_id, membership_start, membership_end,
-          total_fee, amount_paid, dueAmountValue, cash, online,
+          feeValue, paidValue, dueAmountValue, cash, online,
           security_money, remark || null, status, 
           registration_number || null, father_name || null, aadhar_number || null, 
-          profile_image_url || null, lockerIdNum, aadhaar_front_url || null, aadhaar_back_url || null,
+          profile_image_url || null, lockerIdNum, aadhaar_front_url || null, aadhaar_back_url || null, discountValue,
           id
         ]
       );
@@ -649,8 +648,8 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
              total_fee = $8, amount_paid = $9, due_amount = $10, cash = $11, online = $12, security_money = $13,
              remark = $14, seat_id = $15, shift_id = $16, branch_id = $17, registration_number = $18,
              father_name = $19, aadhar_number = $20, profile_image_url = $21, 
-             aadhaar_front_url = $22, aadhaar_back_url = $23, locker_id = $24, changed_at = NOW()
-         WHERE id = (SELECT id FROM student_membership_history WHERE student_id = $25 ORDER BY id DESC LIMIT 1)`,
+             aadhaar_front_url = $22, aadhaar_back_url = $23, locker_id = $24, discount = $25, changed_at = NOW()
+         WHERE id = (SELECT id FROM student_membership_history WHERE student_id = $26 ORDER BY id DESC LIMIT 1)`,
          [
            updatedStudent.name, updatedStudent.email, updatedStudent.phone, updatedStudent.address,
            updatedStudent.membership_start, updatedStudent.membership_end, updatedStudent.status,
@@ -658,7 +657,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
            updatedStudent.cash, updatedStudent.online, updatedStudent.security_money, updatedStudent.remark || '',
            seatIdNum, firstShiftId, updatedStudent.branch_id, updatedStudent.registration_number,
            updatedStudent.father_name, updatedStudent.aadhar_number, updatedStudent.profile_image_url || '',
-           updatedStudent.aadhaar_front_url || '', updatedStudent.aadhaar_back_url || '', lockerIdNum,
+           updatedStudent.aadhaar_front_url || '', updatedStudent.aadhaar_back_url || '', lockerIdNum, updatedStudent.discount,
            id
          ]
       );
@@ -672,6 +671,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         cash: parseFloat(updatedStudent.cash || 0),
         online: parseFloat(updatedStudent.online || 0),
         security_money: parseFloat(updatedStudent.security_money || 0),
+        discount: parseFloat(updatedStudent.discount || 0),
         remark: updatedStudent.remark || '',
         profile_image_url: updatedStudent.profile_image_url || '',
         aadhaar_front_url: updatedStudent.aadhaar_front_url || '',
@@ -686,7 +686,6 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
     }
   });
 
-  // DELETE a student
   router.delete('/:id', checkAdminOrStaff, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -704,7 +703,6 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
     }
   });
 
-  // GET dashboard stats
   router.get('/stats/dashboard', checkAdmin, async (req, res) => {
     try {
         const { branchId } = req.query;
@@ -747,7 +745,6 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
     }
   });
 
-  // POST renew membership
   router.post('/:id/renew', checkAdminOrStaff, async (req, res) => {
     const client = await pool.connect();
     try {
@@ -758,7 +755,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
         name, registration_number, father_name, aadhar_number, address,
         membership_start, membership_end, email, phone, branch_id,
         shift_ids, seat_id, total_fee, cash, online, security_money, remark,
-        profile_image_url, aadhaar_front_url, aadhaar_back_url, locker_id
+        profile_image_url, aadhaar_front_url, aadhaar_back_url, locker_id, discount
       } = req.body;
 
       if (!membership_start || !membership_end || !name || !phone || !branch_id) {
@@ -775,8 +772,9 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
       const cashValue = parseFloat(cash || 0);
       const onlineValue = parseFloat(online || 0);
       const securityMoneyValue = parseFloat(security_money || 0);
+      const discountValue = parseFloat(discount || 0);
       const amount_paid = cashValue + onlineValue;
-      const due_amount = feeValue - amount_paid;
+      const due_amount = feeValue - discountValue - amount_paid;
       const status = new Date(membership_end) < new Date() ? 'expired' : 'active';
 
       if (seatIdNum && shiftIdsNum.length > 0) {
@@ -813,8 +811,8 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
              email = $9, phone = $10, branch_id = $11,
              total_fee = $12, amount_paid = $13, due_amount = $14,
              cash = $15, online = $16, security_money = $17, remark = $18,
-             profile_image_url = $19, aadhaar_front_url = $20, aadhaar_back_url = $21, locker_id = $22
-         WHERE id = $23
+             profile_image_url = $19, aadhaar_front_url = $20, aadhaar_back_url = $21, locker_id = $22, discount = $23
+         WHERE id = $24
          RETURNING *`,
         [
           name, registration_number, father_name, aadhar_number, address,
@@ -822,7 +820,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           email, phone, branchIdNum,
           feeValue, amount_paid, due_amount,
           cashValue, onlineValue, securityMoneyValue, remark || null,
-          profile_image_url || null, aadhaar_front_url || null, aadhaar_back_url || null, lockerIdNum,
+          profile_image_url || null, aadhaar_front_url || null, aadhaar_back_url || null, lockerIdNum, discountValue,
           id
         ]
       );
@@ -861,7 +859,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           seat_id, shift_id, branch_id,
           registration_number, father_name, aadhar_number,
           profile_image_url, aadhaar_front_url, aadhaar_back_url,
-          locker_id, changed_at
+          locker_id, discount, changed_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())`,
         [
           updated.id, updated.name, updated.email, updated.phone, updated.address,
@@ -871,7 +869,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           seatIdNum, firstShiftId, branchIdNum,
           updated.registration_number, updated.father_name, updated.aadhar_number,
           updated.profile_image_url || '', updated.aadhaar_front_url || '', updated.aadhaar_back_url || '',
-          lockerIdNum
+          lockerIdNum, updated.discount
         ]
       );
 
@@ -886,6 +884,7 @@ router.post('/', checkPermissions(['manage_library_students']), async (req, res)
           cash: parseFloat(updated.cash || 0),
           online: parseFloat(updated.online || 0),
           security_money: parseFloat(updated.security_money || 0),
+          discount: parseFloat(updated.discount || 0),
           remark: updated.remark || '',
           profile_image_url: updated.profile_image_url || '',
           aadhaar_front_url: updated.aadhaar_front_url || '',
