@@ -137,12 +137,9 @@ const Settings = () => {
       let newPermissions = [...prev.permissions];
       if (permissionId === 'manage_library_students') {
         if (newPermissions.includes(permissionId)) {
-          // Remove manage_library_students, but implied permissions can remain if explicitly checked
           newPermissions = newPermissions.filter(p => p !== permissionId);
         } else {
-          // Add manage_library_students and note implied permissions
           newPermissions.push(permissionId);
-          // No need to add implied permissions explicitly; backend handles it
         }
       } else {
         if (newPermissions.includes(permissionId)) {
@@ -360,22 +357,31 @@ const Settings = () => {
                                 <h5 className="text-sm font-semibold text-gray-600 mb-2">{category}</h5>
                                 <div className="space-y-2 border p-3 rounded-md">
                                   {perms.map((p) => (
-                                    <div key={p.id} className="flex items-center">
-                                      <input
-                                        type="checkbox"
-                                        id={p.id}
-                                        checked={newUserData.permissions.includes(p.id)}
-                                        onChange={() => handlePermissionChange(p.id)}
-                                        className="h-4 w-4 rounded"
-                                      />
-                                      <label htmlFor={p.id} className="ml-2 text-sm">
-                                        {p.label}
-                                        {p.id === 'manage_library_students' && (
-                                          <span className="text-xs text-gray-500 ml-1">
-                                            (Includes access to branches, shifts, and lockers)
-                                          </span>
-                                        )}
-                                      </label>
+                                    <div key={p.id}>
+                                      <div className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          id={p.id}
+                                          checked={newUserData.permissions.includes(p.id)}
+                                          onChange={() => handlePermissionChange(p.id)}
+                                          className="h-4 w-4 rounded"
+                                        />
+                                        <label htmlFor={p.id} className="ml-2 text-sm">
+                                          {p.label}
+                                        </label>
+                                      </div>
+                                      {/* --- MODIFICATION START --- */}
+                                      {p.id === 'view_collections' && (
+                                        <p className="pl-6 text-xs text-gray-500">
+                                          Allows staff to see student dues and process payments, but not view total collection summaries.
+                                        </p>
+                                      )}
+                                      {/* --- MODIFICATION END --- */}
+                                      {p.id === 'manage_library_students' && (
+                                        <p className="pl-6 text-xs text-gray-500">
+                                          (Includes access to branches, shifts, and lockers)
+                                        </p>
+                                      )}
                                     </div>
                                   ))}
                                 </div>

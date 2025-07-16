@@ -115,6 +115,13 @@ interface DashboardStats {
   profitLoss: number;
 }
 
+interface CollectionStats {
+    totalPaid: number;
+    totalDue: number;
+    totalCash: number;
+    totalOnline: number;
+}
+
 const API_URL = window.cordova
   ? 'https://maasaraswatilibrary.onrender.com/api'
   : process.env.NODE_ENV === 'production'
@@ -823,6 +830,11 @@ const api = {
 
   getCollections: async (params: { month?: string; branchId?: number } = {}): Promise<{ collections: Collection[] }> => {
     const response = await apiClient.get('/collections', { params });
+    return response.data;
+  },
+
+  getCollectionStats: async (params: { month?: string; branchId?: number } = {}): Promise<CollectionStats> => {
+    const response = await apiClient.get('/collections/stats', { params });
     return response.data;
   },
 

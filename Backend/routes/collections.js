@@ -1,30 +1,25 @@
 module.exports = (pool) => {
   const router = require('express').Router();
-  const { checkAdmin, checkAdminOrStaff } = require('./auth');
+  const { checkAdmin, checkPermissions } = require('./auth');
 
-  router.get('/', checkAdminOrStaff, async (req, res) => {
+  /**
+   * @route   GET /api/collections/stats
+   * @desc    Get aggregate collection statistics.
+   * @access  STRICTLY Admin only.
+   */
+  router.get('/stats', checkAdmin, async (req, res) => {
     try {
       let query = `
         SELECT 
-          smh.id as history_id, 
-          smh.student_id, 
-          smh.name, 
-          sch.title as shift_title, 
-          smh.total_fee, 
-          smh.amount_paid, 
-          smh.due_amount,
-          smh.cash,
-          smh.online,
-          smh.security_money,
-          smh.remark,
-          smh.changed_at as created_at,
-          smh.branch_id,
-          b.name as branch_name
+          COALESCE(SUM(smh.amount_paid), 0) as "totalPaid",
+          COALESCE(SUM(smh.due_amount), 0) as "totalDue",
+          COALESCE(SUM(smh.cash), 0) as "totalCash",
+          COALESCE(SUM(smh.online), 0) as "totalOnline",
+          COALESCE(SUM(smh.security_money), 0) as "totalSecurityMoney"
         FROM student_membership_history smh
-        LEFT JOIN schedules sch ON smh.shift_id = sch.id
-        LEFT JOIN branches b ON smh.branch_id = b.id
       `;
       const params = [];
+      let whereClause = '';
       let paramIndex = 1;
 
       if (req.query.month) {
@@ -33,7 +28,7 @@ module.exports = (pool) => {
           return res.status(400).json({ message: 'Invalid month format. Use YYYY-MM' });
         }
         const [year, month] = monthParam.split('-');
-        query += ` WHERE EXTRACT(YEAR FROM smh.changed_at) = $${paramIndex} AND EXTRACT(MONTH FROM smh.changed_at) = $${paramIndex + 1}`;
+        whereClause += ` WHERE EXTRACT(YEAR FROM smh.changed_at) = $${paramIndex} AND EXTRACT(MONTH FROM smh.changed_at) = $${paramIndex + 1}`;
         params.push(year, month);
         paramIndex += 2;
       }
@@ -43,165 +38,180 @@ module.exports = (pool) => {
         if (isNaN(branchId)) {
           return res.status(400).json({ message: 'Invalid branch ID' });
         }
-        query += (paramIndex > 1 ? ' AND' : ' WHERE') + ` smh.branch_id = $${paramIndex}`;
+        whereClause += (paramIndex > 1 ? ' AND' : ' WHERE') + ` smh.branch_id = $${paramIndex}`;
         params.push(branchId);
-        paramIndex++;
       }
+      
+      query += whereClause;
 
-      query += ` ORDER BY smh.name`;
       const result = await pool.query(query, params);
-      const collections = result.rows.map(row => ({
-        historyId: row.history_id,
-        studentId: row.student_id,
-        name: row.name,
-        shiftTitle: row.shift_title,
-        totalFee: row.total_fee !== null && row.total_fee !== undefined ? parseFloat(row.total_fee) : 0,
-        amountPaid: row.amount_paid !== null && row.amount_paid !== undefined ? parseFloat(row.amount_paid) : 0,
-        dueAmount: row.due_amount !== null && row.due_amount !== undefined ? parseFloat(row.due_amount) : 0,
-        cash: row.cash !== null && row.cash !== undefined ? parseFloat(row.cash) : 0,
-        online: row.online !== null && row.online !== undefined ? parseFloat(row.online) : 0,
-        securityMoney: row.security_money !== null && row.security_money !== undefined ? parseFloat(row.security_money) : 0,
-        remark: row.remark || '',
-        createdAt: row.created_at,
-        branchId: row.branch_id,
-        branchName: row.branch_name
-      }));
-      res.json({ collections });
+      
+      const stats = {
+          totalPaid: parseFloat(result.rows[0].totalPaid),
+          totalDue: parseFloat(result.rows[0].totalDue),
+          totalCash: parseFloat(result.rows[0].totalCash),
+          totalOnline: parseFloat(result.rows[0].totalOnline),
+          totalSecurityMoney: parseFloat(result.rows[0].totalSecurityMoney),
+      };
+
+      res.json(stats);
     } catch (err) {
-      console.error('Error fetching collections:', err);
-      res.status(500).json({ message: 'Server error fetching collections', error: err.message });
+      console.error('Error fetching collection stats:', err);
+      res.status(500).json({ message: 'Server error fetching collection stats', error: err.message });
     }
   });
 
-  router.put('/:historyId', checkAdmin, async (req, res) => {
-    const client = await pool.connect(); // Use a transaction to ensure consistency
+  /**
+   * @route   GET /api/collections
+   * @desc    Get a list of all individual student collection records.
+   * @access  Admin or Staff with 'view_collections' permission.
+   */
+  router.get('/', checkPermissions(['view_collections']), async (req, res) => {
     try {
-      await client.query('BEGIN'); // Start transaction
+      let query = `
+        SELECT 
+          smh.id as "historyId", 
+          smh.student_id as "studentId", 
+          smh.name, 
+          sch.title as "shiftTitle", 
+          smh.total_fee as "totalFee", 
+          smh.amount_paid as "amountPaid", 
+          smh.due_amount as "dueAmount",
+          smh.cash,
+          smh.online,
+          smh.security_money as "securityMoney",
+          smh.remark,
+          smh.changed_at as "createdAt",
+          smh.branch_id as "branchId",
+          b.name as "branchName"
+        FROM student_membership_history smh
+        LEFT JOIN schedules sch ON smh.shift_id = sch.id
+        LEFT JOIN branches b ON smh.branch_id = b.id
+      `;
+      const params = [];
+      let whereClause = '';
+      let paramIndex = 1;
+
+      if (req.query.month) {
+        const monthParam = req.query.month;
+         if (!/^\d{4}-\d{2}$/.test(monthParam)) {
+          return res.status(400).json({ message: 'Invalid month format. Use YYYY-MM' });
+        }
+        const [year, month] = monthParam.split('-');
+        whereClause += ` WHERE EXTRACT(YEAR FROM smh.changed_at) = $${paramIndex} AND EXTRACT(MONTH FROM smh.changed_at) = $${paramIndex + 1}`;
+        params.push(year, month);
+        paramIndex += 2;
+      }
+
+      if (req.query.branchId) {
+        const branchId = parseInt(req.query.branchId, 10);
+        if (isNaN(branchId)) {
+          return res.status(400).json({ message: 'Invalid branch ID' });
+        }
+        whereClause += (paramIndex > 1 ? ' AND' : ' WHERE') + ` smh.branch_id = $${paramIndex}`;
+        params.push(branchId);
+      }
+
+      query += whereClause + ` ORDER BY smh.name;`;
+      
+      const result = await pool.query(query, params);
+
+      const collections = result.rows.map(row => ({
+        ...row,
+        totalFee: parseFloat(row.totalFee || 0),
+        amountPaid: parseFloat(row.amountPaid || 0),
+        dueAmount: parseFloat(row.dueAmount || 0),
+        cash: parseFloat(row.cash || 0),
+        online: parseFloat(row.online || 0),
+        securityMoney: parseFloat(row.securityMoney || 0),
+      }));
+
+      res.json({ collections });
+    } catch (err) {
+      console.error('Error fetching collections list:', err);
+      res.status(500).json({ message: 'Server error fetching collections list', error: err.message });
+    }
+  });
+
+  /**
+   * @route   PUT /api/collections/:historyId
+   * @desc    Pay a due amount for a student's collection record.
+   * @access  Admin or Staff with 'view_collections' permission.
+   */
+  router.put('/:historyId', checkPermissions(['view_collections']), async (req, res) => {
+    const client = await pool.connect(); 
+    try {
+      await client.query('BEGIN');
 
       const { historyId } = req.params;
       const { payment_amount, payment_method } = req.body;
 
-      // Validate payment_amount
+      // --- 1. Validate Input ---
       if (typeof payment_amount !== 'number' || payment_amount <= 0) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ message: 'Invalid payment_amount' });
+        return res.status(400).json({ message: 'Invalid payment amount' });
       }
-
-      // Validate payment_method
       if (!['cash', 'online'].includes(payment_method)) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ message: 'Invalid payment_method' });
+        return res.status(400).json({ message: 'Invalid payment method' });
       }
 
-      // Fetch the existing history record
-      const historyRes = await client.query('SELECT * FROM student_membership_history WHERE id = $1', [historyId]);
+      // --- 2. Fetch the specific history record to get its due amount and student_id ---
+      const historyRes = await client.query('SELECT * FROM student_membership_history WHERE id = $1 FOR UPDATE', [historyId]);
       if (historyRes.rows.length === 0) {
         await client.query('ROLLBACK');
         return res.status(404).json({ message: 'History record not found' });
       }
       const history = historyRes.rows[0];
-
-      // Parse current values as floats, defaulting to 0 if null/undefined
-      const current_cash = parseFloat(history.cash) || 0;
-      const current_online = parseFloat(history.online) || 0;
-      const current_total_fee = parseFloat(history.total_fee) || 0;
-      const current_due_amount = parseFloat(history.due_amount) || 0;
-
-      // Calculate new values based on payment method
-      let new_cash = current_cash;
-      let new_online = current_online;
-      if (payment_method === 'cash') {
-        new_cash += payment_amount;
-      } else if (payment_method === 'online') {
-        new_online += payment_amount;
-      }
-
-      // Calculate new amount_paid and due_amount
-      const new_amount_paid = new_cash + new_online;
-      const new_due_amount = current_total_fee - new_amount_paid;
-
-      // Prevent overpayment
-      if (new_due_amount < 0) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ message: 'Payment exceeds due amount' });
-      }
-
-      // Update the student_membership_history table
-      await client.query(
-        `UPDATE student_membership_history 
-         SET cash = $1, online = $2, amount_paid = $3, due_amount = $4 
-         WHERE id = $5`,
-        [new_cash, new_online, new_amount_paid, new_due_amount, historyId]
-      );
-
-      // Fetch the student_id from the history record
       const studentId = history.student_id;
+      const history_due_amount = parseFloat(history.due_amount) || 0;
 
-      // Verify the student exists in the students table
-      const studentRes = await client.query('SELECT * FROM students WHERE id = $1', [studentId]);
-      if (studentRes.rows.length === 0) {
+      // --- 3. Check for overpayment against THIS transaction's due amount ---
+      if (payment_amount > history_due_amount + 0.01) { // Use a small tolerance for float math
         await client.query('ROLLBACK');
-        return res.status(404).json({ message: 'Student not found for this history record' });
+        return res.status(400).json({ message: `Payment of ${payment_amount.toFixed(2)} exceeds the due amount of ${history_due_amount.toFixed(2)} for this specific transaction.` });
       }
 
-      // Update the students table with the new payment details
-      await client.query(
-        `UPDATE students 
-         SET cash = $1, online = $2, amount_paid = $3, due_amount = $4 
-         WHERE id = $5`,
-        [new_cash, new_online, new_amount_paid, new_due_amount, studentId]
-      );
+      // --- 4. Fetch the main student record to get the aggregate totals ---
+      const studentRes = await client.query('SELECT * FROM students WHERE id = $1 FOR UPDATE', [studentId]);
+      if (studentRes.rows.length === 0) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ message: `Student with ID ${studentId} not found.` });
+      }
+      const student = studentRes.rows[0];
 
-      // Fetch the updated history record with shift title and branch name
-      const updatedRes = await client.query(`
-        SELECT 
-          smh.id as history_id, 
-          smh.student_id, 
-          smh.name, 
-          sch.title as shift_title, 
-          smh.total_fee, 
-          smh.amount_paid, 
-          smh.due_amount,
-          smh.cash,
-          smh.online,
-          smh.security_money,
-          smh.remark,
-          smh.changed_at as created_at,
-          smh.branch_id,
-          b.name as branch_name
-        FROM student_membership_history smh
-        LEFT JOIN schedules sch ON smh.shift_id = sch.id
-        LEFT JOIN branches b ON smh.branch_id = b.id
-        WHERE smh.id = $1
-      `, [historyId]);
-      const updatedHistory = updatedRes.rows[0];
+      // --- 5. Update the totals for the main STUDENT record ---
+      const new_student_cash = (parseFloat(student.cash) || 0) + (payment_method === 'cash' ? payment_amount : 0);
+      const new_student_online = (parseFloat(student.online) || 0) + (payment_method === 'online' ? payment_amount : 0);
+      const new_student_amount_paid = (parseFloat(student.amount_paid) || 0) + payment_amount;
+      const new_student_due_amount = (parseFloat(student.due_amount) || 0) - payment_amount;
 
-      await client.query('COMMIT'); // Commit transaction
+      const updateStudentQuery = `
+        UPDATE students 
+        SET cash = $1, online = $2, amount_paid = $3, due_amount = $4 
+        WHERE id = $5`;
+      await client.query(updateStudentQuery, [new_student_cash, new_student_online, new_student_amount_paid, new_student_due_amount, studentId]);
 
-      // Return the updated collection data
-      res.json({
-        message: 'Payment updated successfully',
-        collection: {
-          historyId: updatedHistory.history_id,
-          studentId: updatedHistory.student_id,
-          name: updatedHistory.name,
-          shiftTitle: updatedHistory.shift_title,
-          totalFee: parseFloat(updatedHistory.total_fee) || 0,
-          amountPaid: parseFloat(updatedHistory.amount_paid) || 0,
-          dueAmount: parseFloat(updatedHistory.due_amount) || 0,
-          cash: parseFloat(updatedHistory.cash) || 0,
-          online: parseFloat(updatedHistory.online) || 0,
-          securityMoney: parseFloat(updatedHistory.security_money) || 0,
-          remark: updatedHistory.remark || '',
-          createdAt: updatedHistory.created_at,
-          branchId: updatedHistory.branch_id,
-          branchName: updatedHistory.branch_name
-        }
-      });
+      // --- 6. Update the specific HISTORY record that is being paid ---
+      const new_history_cash = (parseFloat(history.cash) || 0) + (payment_method === 'cash' ? payment_amount : 0);
+      const new_history_online = (parseFloat(history.online) || 0) + (payment_method === 'online' ? payment_amount : 0);
+      const new_history_amount_paid = (parseFloat(history.amount_paid) || 0) + payment_amount;
+      const new_history_due_amount = history_due_amount - payment_amount;
+
+      const updateHistoryQuery = `
+        UPDATE student_membership_history 
+        SET cash = $1, online = $2, amount_paid = $3, due_amount = $4 
+        WHERE id = $5`;
+      await client.query(updateHistoryQuery, [new_history_cash, new_history_online, new_history_amount_paid, new_history_due_amount, historyId]);
+      
+      // --- 7. Commit and respond ---
+      await client.query('COMMIT');
+      res.json({ message: 'Payment updated successfully' });
+
     } catch (err) {
-      await client.query('ROLLBACK'); // Roll back transaction on error
+      await client.query('ROLLBACK');
       console.error('Error updating payment:', err);
-      res.status(500).json({ message: 'Server error updating payment', error: err.message });
+      res.status(500).json({ message: 'Server error during payment update', error: err.message });
     } finally {
       client.release();
     }
