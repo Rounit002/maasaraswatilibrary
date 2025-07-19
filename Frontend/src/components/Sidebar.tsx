@@ -13,6 +13,12 @@ interface SidebarProps {
 const hasPermission = (user, permission) => {
     if (!user || !user.permissions) return false;
     if (user.role === 'admin') return true;
+    
+    // Special case for lockers - allow both admin and staff users
+    if (permission === 'manage_lockers_or_staff') {
+        return user.role === 'admin' || user.role === 'staff';
+    }
+    
     return user.permissions.includes(permission);
 };
 
@@ -44,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     { path: '/collections', icon: <Wallet size={20} />, label: 'Collection & Due', permission: 'view_collections' },
     { path: '/expenses', icon: <ShoppingBag size={20} />, label: 'Expenses', permission: 'manage_expenses' },
     { path: '/profit-loss', icon: <BarChart2 size={20} />, label: 'Profit & Loss', permission: 'view_reports' },
-    { path: '/lockers', icon: <Archive size={20} />, label: 'Lockers', permission: 'manage_lockers' },
+    { path: '/lockers', icon: <Archive size={20} />, label: 'Lockers', permission: 'manage_lockers_or_staff' },
     { path: '/settings', icon: <Settings size={20} />, label: 'Settings', permission: 'admin_only' },
   ];
 
