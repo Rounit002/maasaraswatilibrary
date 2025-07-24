@@ -60,7 +60,7 @@ interface FormData {
   membershipStart: string;
   membershipEnd: string;
   seatId: number | null;
-  shiftId: number | null;
+  shiftIds: number[];
   lockerId: number | null;
   totalFee: string;
   cash: string;
@@ -91,9 +91,9 @@ const AddStudentForm: React.FC = () => {
     membershipStart: '',
     membershipEnd: '',
     seatId: null,
-    shiftId: null,
+    shiftIds: [],
     lockerId: null,
-    totalFee: '',
+    totalFee: '0',
     cash: '',
     online: '',
     securityMoney: '',
@@ -129,16 +129,14 @@ const AddStudentForm: React.FC = () => {
           api.getSchedules(),
         ]);
 
-        // FIX: Use branchData directly as it is the array of branches
         setBranches(branchData);
         
-        // Map over schedules to ensure they have a 'fee' property
         const formattedSchedules = shiftsData.schedules.map((schedule: any) => ({
           ...schedule,
-          fee: schedule.fee ?? 0, // Default fee to 0 if not provided
+          fee: schedule.fee ?? 0,
         }));
         setShifts(formattedSchedules);
-        setAvailableShifts(formattedSchedules); // Initially, all shifts are available
+        setAvailableShifts(formattedSchedules);
         setError(null);
       } catch (error: any) {
         console.error('Failed to fetch initial data:', error);
@@ -181,20 +179,17 @@ const AddStudentForm: React.FC = () => {
 
   // Effect to fetch available shifts for a selected seat
   useEffect(() => {
-    const fetchAvailableShifts = async () => {
+    const fetchAvailableShiftsForSeat = async () => {
       if (!formData.seatId) {
-        setAvailableShifts(shifts); // Reset to all shifts if no seat is selected
+        setAvailableShifts(shifts);
         return;
       }
       setLoadingShifts(true);
       try {
-        const availableShiftsResponse = await api.getAvailableShifts(formData.seatId);
-        
-        const formattedShifts = availableShiftsResponse.availableShifts.map((shift: any) => ({
-          ...shift,
-          fee: shift.fee ?? 0, // Default fee to 0 if not provided
-        }));
-        setAvailableShifts(formattedShifts);
+        const response = await api.getAvailableShifts(formData.seatId);
+        const availableShiftIds = response.availableShifts.map(s => s.id);
+        const available = shifts.filter(s => availableShiftIds.includes(s.id));
+        setAvailableShifts(available);
         setError(null);
       } catch (error) {
         console.error('Failed to fetch available shifts:', error);
@@ -204,7 +199,7 @@ const AddStudentForm: React.FC = () => {
         setLoadingShifts(false);
       }
     };
-    fetchAvailableShifts();
+    fetchAvailableShiftsForSeat();
   }, [formData.seatId, shifts]);
 
   // Handle changes to standard input fields
@@ -214,32 +209,49 @@ const AddStudentForm: React.FC = () => {
   };
 
   // Handle changes to react-select dropdowns
-  const handleSelectChange = (name: keyof FormData, option: SelectOption | ShiftOption | null) => {
-    const value = option ? option.value : null;
-    
+  const handleSelectChange = (name: keyof FormData, option: any) => {
     if (name === 'branchId') {
+      const value = option ? option.value : null;
       setFormData(prev => ({
         ...prev,
         branchId: value,
         seatId: null,
-        shiftId: null,
+        shiftIds: [],
         lockerId: null,
-        totalFee: '',
+        totalFee: '0',
       }));
     } else if (name === 'seatId') {
+      const value = option ? option.value : null;
       setFormData(prev => ({
         ...prev,
         seatId: value,
-        shiftId: null,
+        shiftIds: [],
+        totalFee: '0',
       }));
-    } else if (name === 'shiftId') {
-      const selectedShift = shifts.find(shift => shift.id === value);
-      setFormData(prev => ({
-        ...prev,
-        shiftId: value,
-        totalFee: selectedShift ? selectedShift.fee.toString() : '',
-      }));
+    } else if (name === 'shiftIds') {
+        const selectedShiftIds = option ? option.map((opt: { value: number }) => opt.value) : [];
+        
+        setFormData(prev => {
+            let newTotalFee = prev.totalFee;
+            // Auto-calculate fee only if exactly one shift is selected
+            if (selectedShiftIds.length === 1) {
+                const selectedShift = shifts.find(shift => shift.id === selectedShiftIds[0]);
+                newTotalFee = selectedShift ? selectedShift.fee.toString() : '0';
+            } 
+            // If transitioning from one shift to multiple or zero, reset fee to prompt manual entry
+            else if (prev.shiftIds.length === 1 && selectedShiftIds.length !== 1) {
+                newTotalFee = '0';
+            }
+            // Otherwise, keep the user's manually entered fee
+        
+            return {
+                ...prev,
+                shiftIds: selectedShiftIds,
+                totalFee: newTotalFee
+            };
+        });
     } else {
+      const value = option ? option.value : null;
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
@@ -317,8 +329,8 @@ const AddStudentForm: React.FC = () => {
   const shiftOptions: ShiftOption[] = shifts.map(shift => {
     const isAvailable = availableShifts.some(s => s.id === shift.id);
     const label = formData.seatId !== null
-      ? `${shift.title} - ${shift.description} ${isAvailable ? '(Available)' : '(Assigned)'}`
-      : `${shift.title} -  [${shift.description}] (${shift.fee})`;
+      ? `${shift.title} - [Fee: ${shift.fee}] ${isAvailable ? '(Available)' : '(Assigned)'}`
+      : `${shift.title} - [Fee: ${shift.fee}]`;
     return {
       value: shift.id,
       label,
@@ -388,7 +400,7 @@ const AddStudentForm: React.FC = () => {
         aadhaarFrontUrl: aadhaarFrontUrl || undefined,
         aadhaarBackUrl: aadhaarBackUrl || undefined,
         seatId: formData.seatId !== null ? formData.seatId : undefined,
-        shiftIds: formData.shiftId !== null ? [formData.shiftId] : [],
+        shiftIds: formData.shiftIds,
         lockerId: formData.lockerId !== null ? formData.lockerId : undefined,
       };
 
@@ -407,6 +419,7 @@ const AddStudentForm: React.FC = () => {
   const totalAmountPaid = cashAmount + onlineAmount;
   const effectiveTotalFee = (parseFloat(formData.totalFee) || 0) - (parseFloat(formData.discount) || 0);
   const dueAmount = effectiveTotalFee - totalAmountPaid;
+  const isFeeReadOnly = formData.shiftIds.length === 1;
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -551,7 +564,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="seatId" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Seat *
+            Select Seat
           </label>
           <Select
             options={seatOptions}
@@ -564,17 +577,18 @@ const AddStudentForm: React.FC = () => {
           />
         </div>
         <div>
-          <label htmlFor="shiftId" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Shift *
+          <label htmlFor="shiftIds" className="block text-sm font-medium text-gray-700 mb-1">
+            Select Shifts
           </label>
           <Select
+            isMulti
             options={shiftOptions}
-            value={shiftOptions.find(option => option.value === formData.shiftId) || null}
-            onChange={(option: ShiftOption | null) => handleSelectChange('shiftId', option)}
+            value={shiftOptions.filter(option => formData.shiftIds.includes(option.value))}
+            onChange={(options) => handleSelectChange('shiftIds', options)}
             isLoading={loadingShifts}
-            placeholder="Select a shift"
+            placeholder="Select shifts"
             className="w-full"
-            isDisabled={availableShifts.length === 0}
+            isDisabled={shifts.length === 0}
           />
         </div>
         <div>
@@ -593,7 +607,7 @@ const AddStudentForm: React.FC = () => {
         </div>
         <div>
           <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">
-            Total Fee *
+            {isFeeReadOnly ? 'Total Fee (Auto-calculated) *' : 'Total Fee *'}
           </label>
           <input
             type="number"
@@ -601,9 +615,10 @@ const AddStudentForm: React.FC = () => {
             name="totalFee"
             value={formData.totalFee}
             onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+            readOnly={isFeeReadOnly}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
+                isFeeReadOnly ? 'bg-gray-100' : ''
+            }`}
           />
         </div>
         <div>

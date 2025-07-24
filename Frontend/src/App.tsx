@@ -36,6 +36,7 @@ import HostelDashboard from './pages/HostelDashboard';
 import ActiveHostelStudents from './pages/ActiveHostelStudents';
 import InactiveStudents from './pages/InactiveStudents';
 import LockerManagement from './pages/LockerManagement';
+import PublicStudentRegistration from './pages/PublicStudentRegistration';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<PublicStudentRegistration />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       
       <Route path="/hostel-dashboard" element={<ProtectedRoute><HostelDashboard /></ProtectedRoute>} />

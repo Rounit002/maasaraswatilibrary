@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import Select from 'react-select';
 
-// Comprehensive Student interface combining details from all pages
+// FIX: Added 'discount' property to the Student interface
 interface Student {
   id: number;
   name: string;
@@ -54,6 +54,7 @@ interface Student {
   shiftTitle?: string;
   seatId?: number;
   seatNumber?: string;
+  discount?: number; // This property is now correctly defined
 }
 
 interface Seat {
@@ -61,6 +62,29 @@ interface Seat {
   seatNumber: string;
   studentId?: number | null;
 }
+
+// FIX: Define the payload for the renewStudent API call
+interface RenewStudentPayload {
+  name: string;
+  registrationNumber?: string;
+  fatherName?: string;
+  aadharNumber?: string;
+  address: string;
+  membershipStart: string;
+  membershipEnd: string;
+  email: string;
+  phone: string;
+  branchId: number;
+  shiftIds: number[];
+  seatId?: number;
+  totalFee: number;
+  cash: number;
+  online: number;
+  securityMoney: number;
+  remark?: string;
+  discount?: number; // This property is now correctly defined
+}
+
 
 const hasPermissions = (user: any): user is { permissions: string[] } => {
   return user && 'permissions' in user && Array.isArray(user.permissions);
@@ -78,7 +102,6 @@ const ExpiredMemberships = () => {
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
-  // State for the new branch filter
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<{ value: number | null; label: string } | null>(null);
   const [branchFilterOptions, setBranchFilterOptions] = useState<any[]>([]);
 
@@ -103,11 +126,11 @@ const ExpiredMemberships = () => {
   const [online, setOnline] = useState<string>('');
   const [securityMoney, setSecurityMoney] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
-  
+  const [discount, setDiscount] = useState<string>('');
+
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Effect to fetch supporting data (for filters and dialogs) once on component mount
   useEffect(() => {
     (async () => {
       try {
@@ -118,10 +141,8 @@ const ExpiredMemberships = () => {
 
         setShiftOptions(shiftsResp.schedules.map((shift: any) => ({ value: shift.id, label: shift.title })));
         
-        // Options for the renewal dialog's branch dropdown
         setBranchOptions(branchesResp.map((branch: any) => ({ value: branch.id, label: branch.name })));
         
-        // Options for the main page's branch filter dropdown
         setBranchFilterOptions([
           { value: null, label: 'All Branches' },
           ...branchesResp.map((branch: any) => ({ value: branch.id, label: branch.name }))
@@ -133,7 +154,6 @@ const ExpiredMemberships = () => {
     })();
   }, []);
 
-  // Effect to fetch expired students when the component mounts or the branch filter changes
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -176,14 +196,12 @@ const ExpiredMemberships = () => {
   const handleRenewClick = async (student: Student) => {
     try {
         setLoading(true);
-        const fullStudentDetails = await api.getStudent(student.id);
+        const fullStudentDetails: Student = await api.getStudent(student.id); // Ensure the fetched type is Student
         setSelectedStudent(fullStudentDetails);
 
-        // Set new membership dates
         setStartDate(new Date());
         setEndDate(addMonths(new Date(), 1));
 
-        // Pre-fill all form fields with the student's existing data
         setNameInput(fullStudentDetails.name || '');
         setRegistrationNumberInput(fullStudentDetails.registrationNumber || '');
         setFatherNameInput(fullStudentDetails.fatherName || '');
@@ -196,7 +214,6 @@ const ExpiredMemberships = () => {
         const currentAssignment = fullStudentDetails.assignments?.[0];
         setSelectedShift(currentAssignment ? { value: currentAssignment.shiftId, label: currentAssignment.shiftTitle } : null);
         
-        // This slight delay allows the seat options to populate based on the selected shift
         setTimeout(() => {
              setSelectedSeat(currentAssignment ? { value: currentAssignment.seatId, label: currentAssignment.seatNumber } : null);
         }, 150);
@@ -205,6 +222,8 @@ const ExpiredMemberships = () => {
         setCash(fullStudentDetails.cash ? fullStudentDetails.cash.toString() : '0');
         setOnline(fullStudentDetails.online ? fullStudentDetails.online.toString() : '0');
         setSecurityMoney(fullStudentDetails.securityMoney ? fullStudentDetails.securityMoney.toString() : '0');
+        // FIX: This line will no longer cause an error because 'discount' is in the Student interface
+        setDiscount(fullStudentDetails.discount ? fullStudentDetails.discount.toString() : '0');
         setRemark(fullStudentDetails.remark || '');
         
         setRenewDialogOpen(true);
@@ -217,28 +236,24 @@ const ExpiredMemberships = () => {
   };
 
   const handleWhatsAppClick = (phone: string) => {
-    // Format phone number to remove any non-digit characters
     const formattedPhone = phone.replace(/\D/g, '');
-    // Construct WhatsApp URL (using international format, assuming phone number is valid)
     const whatsappUrl = `https://wa.me/${formattedPhone}`;
-    // Open WhatsApp chat in a new tab
     window.open(whatsappUrl, '_blank');
   };
 
   const handleRenewSubmit = async () => {
-    // **FIX START**: Added stricter validation to match backend requirements
     if (
       !selectedStudent || !startDate || !endDate ||
-      !nameInput.trim() || !phoneInput.trim() || !addressInput.trim() ||
+      !nameInput.trim() || !phoneInput.trim() ||
       !selectedShift?.value || !totalFee || !selectedBranch?.value
     ) {
-      toast.error('Please ensure Name, Phone, Address, Branch, Shift, and Fee are filled correctly.');
+      toast.error('Please ensure Name, Phone, Branch, Shift, and Fee are filled correctly.');
       return;
     }
-    // **FIX END**
 
     try {
-      await api.renewStudent(selectedStudent.id, {
+      // FIX: The payload now matches the RenewStudentPayload interface
+      const payload: RenewStudentPayload = {
         name: nameInput,
         registrationNumber: registrationNumberInput,
         fatherName: fatherNameInput,
@@ -255,8 +270,11 @@ const ExpiredMemberships = () => {
         cash: parseFloat(cash) || 0,
         online: parseFloat(online) || 0,
         securityMoney: parseFloat(securityMoney) || 0,
+        discount: parseFloat(discount) || 0,
         remark: remark.trim() || undefined,
-      });
+      };
+
+      await api.renewStudent(selectedStudent.id, payload);
 
       toast.success(`Membership renewed for ${selectedStudent.name}`);
       setRenewDialogOpen(false);
@@ -272,8 +290,9 @@ const ExpiredMemberships = () => {
 
   const cashAmount = parseFloat(cash) || 0;
   const onlineAmount = parseFloat(online) || 0;
+  const discountAmount = parseFloat(discount) || 0;
   const paid = cashAmount + onlineAmount;
-  const due = (parseFloat(totalFee) || 0) - paid;
+  const due = (parseFloat(totalFee) || 0) - discountAmount - paid;
 
   if (!user) {
     navigate('/login');
@@ -495,6 +514,18 @@ const ExpiredMemberships = () => {
                   onChange={(e) => setTotalFee(e.target.value)}
                   min="0"
                   step="0.01"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Discount</label>
+                <input
+                  className="w-full border rounded px-3 py-2 mt-1"
+                  type="number"
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  placeholder="Enter discount amount"
                 />
               </div>
               <div>

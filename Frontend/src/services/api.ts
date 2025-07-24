@@ -187,7 +187,15 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       console.warn('401 Unauthorized - Redirecting to login:', error.response?.data?.message);
-      window.location.href = '/login';
+      
+      // Don't redirect to login if we're already on a public page
+      const currentPath = window.location.hash.replace('#', '') || window.location.pathname;
+      const publicPaths = ['/login', '/register'];
+      const isOnPublicPage = publicPaths.some(path => currentPath.startsWith(path));
+      
+      if (!isOnPublicPage) {
+        window.location.href = '/login';
+      }
     } else if (!error.response) {
       console.error('Network error - please check your connection:', error.message);
       alert('Unable to connect to the server. Please check your network.');
@@ -238,6 +246,16 @@ const api = {
         return { isAuthenticated: false, user: null };
       }
       throw error;
+    }
+  },
+
+  getPublicBranches: async (): Promise<Branch[]> => {
+    try {
+      const response = await apiClient.get('/branches/public');
+      return response.data.branches;
+    } catch (error: any) {
+      console.error('[api.ts getPublicBranches] Error:', error.message);
+      throw new Error(error.response?.data?.message || 'Failed to fetch branches');
     }
   },
 
@@ -589,6 +607,7 @@ const api = {
       online?: number;
       securityMoney?: number;
       remark?: string;
+      discount?: number;
     }
   ): Promise<{ message: string; student: Student }> => {
     const response = await apiClient.post(`/students/${id}/renew`, membershipData);
@@ -924,8 +943,22 @@ const api = {
     return response.data;
   },
 
-  assignLocker: async (id: number, data: { studentId: number | null }): Promise<{ locker: Locker }> => {
-    const response = await apiClient.put(`/lockers/${id}/assign`, data);
+  assignLocker: async (id: number, data: { studentId: number | null }) => {
+    const response = await apiClient.patch(`/api/lockers/${id}/assign`, data);
+    return response.data;
+  },
+
+  registerPublicStudent: async (studentData: {
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    branch_id: number;
+    registration_number?: string;
+    father_name?: string;
+    aadhar_number?: string;
+  }) => {
+    const response = await apiClient.post('/students/public/register', studentData);
     return response.data;
   },
 };

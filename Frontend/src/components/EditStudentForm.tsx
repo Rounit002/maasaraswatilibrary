@@ -88,7 +88,7 @@ interface FormData {
   branchId: number | null;
   membershipStart: string;
   membershipEnd: string;
-  shiftId: string;
+  shiftIds: number[];
   seatId: number | null;
   lockerId: number | null;
   totalFee: string;
@@ -145,7 +145,7 @@ const EditStudentForm: React.FC = () => {
     branchId: null,
     membershipStart: '',
     membershipEnd: '',
-    shiftId: '',
+    shiftIds: [],
     seatId: null,
     lockerId: null,
     totalFee: '',
@@ -185,8 +185,8 @@ const EditStudentForm: React.FC = () => {
         ]);
         
         const student: Student = studentResponse;
-        const shiftId = student.assignments?.[0]?.shiftId?.toString() || '';
-        const validShift = shiftsResponse.schedules.find((shift: Schedule) => shift.id === parseInt(shiftId, 10));
+        const currentShiftIds = student.assignments?.map(a => a.shiftId) || [];
+        
         setFormData({
           name: student.name || '',
           registrationNumber: student.registrationNumber || '',
@@ -198,7 +198,7 @@ const EditStudentForm: React.FC = () => {
           branchId: student.branchId || null,
           membershipStart: student.membershipStart.split('T')[0],
           membershipEnd: student.membershipEnd.split('T')[0],
-          shiftId: validShift ? shiftId : '',
+          shiftIds: currentShiftIds,
           seatId: student.assignments?.[0]?.seatId || null,
           lockerId: student.lockerId || null,
           totalFee: student.totalFee.toString(),
@@ -214,7 +214,12 @@ const EditStudentForm: React.FC = () => {
           aadhaarBackImage: null,
           aadhaarBackUrl: student.aadhaarBackUrl || '',
         });
-        setShifts(shiftsResponse.schedules as Schedule[]);
+
+        const formattedSchedules = shiftsResponse.schedules.map((schedule: any) => ({
+            ...schedule,
+            fee: schedule.fee ?? 0,
+        }));
+        setShifts(formattedSchedules as Schedule[]);
         setBranches(branchesResponse);
         setLockers(lockersResponse.lockers as Locker[]);
       } catch (error: any) {
@@ -232,18 +237,12 @@ const EditStudentForm: React.FC = () => {
 
   useEffect(() => {
     const fetchSeats = async () => {
-      const shiftId = parseInt(formData.shiftId, 10);
       const branchId = formData.branchId;
-      if (branchId && shiftId && !isNaN(shiftId)) {
+      if (branchId) {
         setLoadingSeats(true);
         try {
-          const seatsResponse = await api.getSeats({ branchId, shiftId });
-          const allSeats: Seat[] = seatsResponse.seats;
-          const availableSeats = allSeats.filter((seat) => {
-            const shift = seat.shifts.find((s) => s.shiftId === shiftId);
-            return shift && (!shift.isAssigned || seat.id === formData.seatId);
-          });
-          setSeats(availableSeats);
+          const seatsResponse = await api.getSeats({ branchId });
+          setSeats(seatsResponse.seats);
         } catch (error: any) {
           console.error('Failed to fetch seats:', error);
           toast.error(error.response?.data?.message || 'Failed to load seats');
@@ -255,7 +254,7 @@ const EditStudentForm: React.FC = () => {
       }
     };
     fetchSeats();
-  }, [formData.branchId, formData.shiftId, formData.seatId]);
+  }, [formData.branchId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -263,24 +262,44 @@ const EditStudentForm: React.FC = () => {
   };
 
   const handleSelectChange = (name: keyof FormData, option: any) => {
-    const value = option ? option.value : null;
     if (name === 'branchId') {
+      const value = option ? option.value : null;
       setFormData(prev => ({
         ...prev,
         branchId: value,
         seatId: null,
-        shiftId: '',
+        shiftIds: [],
+        totalFee: '0',
       }));
     } else if (name === 'seatId') {
-      setFormData(prev => ({ ...prev, seatId: value }));
-    } else if (name === 'shiftId') {
-      const selectedShift = shifts.find(shift => shift.id === value);
+      const value = option ? option.value : null;
       setFormData(prev => ({
         ...prev,
-        shiftId: value ? value.toString() : '',
-        totalFee: selectedShift ? selectedShift.fee.toString() : prev.totalFee,
-      }));
+        seatId: value,
+        shiftIds: [],
+        totalFee: '0'
+    }));
+    } else if (name === 'shiftIds') {
+        const selectedShiftIds = option ? option.map((opt: { value: number }) => opt.value) : [];
+        
+        setFormData(prev => {
+            let newTotalFee = prev.totalFee;
+            if (selectedShiftIds.length === 1) {
+                const selectedShift = shifts.find(shift => shift.id === selectedShiftIds[0]);
+                newTotalFee = selectedShift ? selectedShift.fee.toString() : '0';
+            } 
+            else if (prev.shiftIds.length === 1 && selectedShiftIds.length !== 1) {
+                newTotalFee = '0';
+            }
+        
+            return {
+                ...prev,
+                shiftIds: selectedShiftIds,
+                totalFee: newTotalFee
+            };
+        });
     } else if (name === 'lockerId') {
+      const value = option ? option.value : null;
       setFormData(prev => ({ ...prev, lockerId: value }));
     }
   };
@@ -353,7 +372,7 @@ const EditStudentForm: React.FC = () => {
         totalFee: parseFloat(formData.totalFee) || 0,
         amountPaid: (parseFloat(formData.cash) || 0) + (parseFloat(formData.online) || 0),
         discount: parseFloat(formData.discount) || 0,
-        shiftIds: formData.shiftId ? [parseInt(formData.shiftId, 10)] : [],
+        shiftIds: formData.shiftIds,
         seatId: formData.seatId,
         lockerId: formData.lockerId,
         cash: parseFloat(formData.cash) || 0,
@@ -391,7 +410,7 @@ const EditStudentForm: React.FC = () => {
 
   const shiftOptions = shifts.map(shift => ({
     value: shift.id,
-    label: `${shift.title} (${shift.time} on ${shift.eventDate})`,
+    label: `${shift.title} - [Fee: ${shift.fee}]`,
   }));
 
   const lockerOptions = [
@@ -409,6 +428,7 @@ const EditStudentForm: React.FC = () => {
   const totalAmountPaid = cashAmount + onlineAmount;
   const effectiveTotalFee = (parseFloat(formData.totalFee) || 0) - (parseFloat(formData.discount) || 0);
   const dueAmount = effectiveTotalFee - totalAmountPaid;
+  const isFeeReadOnly = formData.shiftIds.length === 1;
 
   if (loading) {
     return <div className="p-6 text-center">Loading...</div>;
@@ -544,26 +564,27 @@ const EditStudentForm: React.FC = () => {
           />
         </div>
         <div>
-          <label htmlFor="shiftId" className="block text-sm font-medium text-gray-700 mb-1">Select Shift</label>
-          <Select
-            options={shiftOptions}
-            value={shiftOptions.find(option => option.value === parseInt(formData.shiftId, 10)) || null}
-            onChange={(option) => handleSelectChange('shiftId', option)}
-            placeholder="Select a shift"
-            className="w-full"
-            isDisabled={shifts.length === 0}
-          />
-        </div>
-        <div>
           <label htmlFor="seatId" className="block text-sm font-medium text-gray-700 mb-1">Select Seat</label>
           <Select
             options={seatOptions}
             value={seatOptions.find(option => option.value === formData.seatId) || null}
             onChange={(option) => handleSelectChange('seatId', option)}
             isLoading={loadingSeats}
-            placeholder={formData.branchId ? "Select a seat" : "Select a branch and shift first"}
+            placeholder={formData.branchId ? "Select a seat" : "Select a branch first"}
             className="w-full"
             isDisabled={!formData.branchId || seats.length === 0}
+          />
+        </div>
+        <div>
+          <label htmlFor="shiftIds" className="block text-sm font-medium text-gray-700 mb-1">Select Shifts</label>
+          <Select
+            isMulti
+            options={shiftOptions}
+            value={shiftOptions.filter(option => formData.shiftIds.includes(option.value))}
+            onChange={(option) => handleSelectChange('shiftIds', option)}
+            placeholder="Select shifts"
+            className="w-full"
+            isDisabled={shifts.length === 0}
           />
         </div>
         <div>
@@ -578,17 +599,20 @@ const EditStudentForm: React.FC = () => {
           />
         </div>
         <div>
-          <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">Total Fee</label>
-          <input
-            type="number"
-            id="totalFee"
-            name="totalFee"
-            value={formData.totalFee}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
-          />
+            <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">
+                {isFeeReadOnly ? 'Total Fee (Auto-calculated)' : 'Total Fee'}
+            </label>
+            <input
+                type="number"
+                id="totalFee"
+                name="totalFee"
+                value={formData.totalFee}
+                onChange={handleChange}
+                readOnly={isFeeReadOnly}
+                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
+                    isFeeReadOnly ? 'bg-gray-100' : ''
+                }`}
+            />
         </div>
         <div>
           <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">Discount</label>
