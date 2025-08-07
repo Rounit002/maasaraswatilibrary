@@ -2,113 +2,6 @@ module.exports = (pool) => {
   const router = require('express').Router();
   const { checkAdmin, checkAdminOrStaff } = require('./auth');
   const { checkPermissions } = require('./auth');
-  
-  // Public student self-registration endpoint
-  router.post('/public/register', async (req, res) => {
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Extract and validate required fields
-      const { name, email, phone, address, branch_id, registration_number, father_name, aadhar_number } = req.body;
-
-      // Required fields validation
-      if (!name || !phone || !branch_id) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Name, phone, and branch are required fields' 
-        });
-      }
-
-      // Set default values for public registration
-      const membershipStart = new Date().toISOString().split('T')[0];
-      const membershipEnd = new Date();
-      membershipEnd.setFullYear(membershipEnd.getFullYear() + 1); // 1 year membership by default
-      
-      // Default financial values (all zeros for public registration)
-      const totalFee = 0;
-      const amountPaid = 0;
-      const cash = 0;
-      const online = 0;
-      const securityMoney = 0;
-      const discount = 0;
-      const dueAmount = totalFee - discount - amountPaid;
-
-      // Check if phone already exists
-      const existingStudent = await client.query(
-        'SELECT id FROM students WHERE phone = $1',
-        [phone]
-      );
-
-      if (existingStudent.rows.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'A student with this phone number already exists.'
-        });
-      }
-
-      // Insert the new student - using only columns that exist in the database
-      const result = await client.query(
-        `INSERT INTO students (
-          name, email, phone, address, branch_id, registration_number,
-          father_name, aadhar_number, membership_start, membership_end,
-          total_fee, amount_paid, due_amount, cash, online, security_money, 
-          discount, is_active, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
-        RETURNING id`,
-        [
-          name, 
-          email || null, 
-          phone, 
-          address || null, 
-          branch_id, 
-          registration_number || null,
-          father_name || null, 
-          aadhar_number || null,
-          membershipStart, 
-          membershipEnd.toISOString().split('T')[0],
-          totalFee, 
-          amountPaid, 
-          dueAmount,
-          cash, 
-          online, 
-          securityMoney, 
-          discount, 
-          true // is_active
-        ]
-      );
-
-      const studentId = result.rows[0].id;
-
-      await client.query('COMMIT');
-      
-      res.status(201).json({
-        success: true,
-        message: 'Registration successful!',
-        studentId
-      });
-
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('Error in public student registration:', err);
-      
-      // Handle duplicate phone number error (additional check)
-      if (err.code === '23505' && err.constraint === 'students_phone_key') {
-        return res.status(400).json({
-          success: false,
-          message: 'A student with this phone number already exists.'
-        });
-      }
-      
-      res.status(500).json({
-        success: false,
-        message: 'An error occurred during registration. Please try again.',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
-    } finally {
-      client.release();
-    }
-  });
 
   const withCalculatedStatus = (selectFields = 's.*') => `
     SELECT
@@ -852,7 +745,7 @@ module.exports = (pool) => {
     }
   });
 
-router.post('/:id/renew', checkAdminOrStaff, async (req, res) => {
+  router.post('/:id/renew', checkAdminOrStaff, async (req, res) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -957,7 +850,6 @@ router.post('/:id/renew', checkAdminOrStaff, async (req, res) => {
         }
       }
 
-      // FIX: Added $26 to the VALUES clause to match the number of columns
       await client.query(
         `INSERT INTO student_membership_history (
           student_id, name, email, phone, address,
@@ -1007,7 +899,6 @@ router.post('/:id/renew', checkAdminOrStaff, async (req, res) => {
       client.release();
     }
   });
-
 
   return router;
 };

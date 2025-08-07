@@ -946,192 +946,27 @@
 {"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-19T15:31:17.751Z"}
 {"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-19T15:31:17.762Z"}
 {"level":"info","message":"Server running on port 3000","timestamp":"2025-07-19T15:31:17.796Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T14:51:42.479Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T14:51:42.528Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T14:51:42.551Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T14:51:42.674Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T15:10:23.719Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T15:10:23.732Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T15:10:23.760Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T15:10:23.815Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-BDex1Xxk.js","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T15:12:02.046Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-DU45hbWi.css","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T15:12:02.051Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-BDex1Xxk.js","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T15:12:04.611Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-DU45hbWi.css","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T15:12:04.615Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T15:12:27.072Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T15:12:27.086Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T15:12:27.094Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T15:12:27.122Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T16:32:08.330Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T16:32:08.386Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T16:32:08.413Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T16:32:08.469Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-DU45hbWi.css","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T16:40:39.709Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-BDex1Xxk.js","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T16:40:39.712Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-BDex1Xxk.js","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T16:40:46.682Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-DU45hbWi.css","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-23T16:40:46.685Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T16:45:00.558Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T16:45:00.569Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T16:45:00.597Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T16:45:00.648Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T18:13:11.675Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T18:13:11.719Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T18:13:11.748Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T18:13:11.893Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T18:37:30.567Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T18:37:30.609Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T18:37:30.636Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T18:37:30.715Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T18:41:07.992Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T18:41:08.028Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T18:41:08.050Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T18:41:08.109Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T18:48:07.324Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T18:48:07.371Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T18:48:07.390Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T18:48:07.444Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-23T18:53:28.989Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-23T18:53:29.015Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-23T18:53:29.030Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-23T18:53:29.080Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T04:50:19.180Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T04:50:19.302Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T04:50:19.350Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T04:50:19.468Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T06:42:22.094Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T06:42:22.136Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T06:42:22.155Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T06:42:22.205Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T10:18:52.907Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T10:18:52.958Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T10:18:52.988Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T10:18:53.131Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T12:42:16.521Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T12:42:16.557Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T12:42:16.576Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T12:42:16.667Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T12:50:49.336Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T12:50:49.351Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T12:50:49.360Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T12:50:49.391Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T12:53:18.992Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T12:53:19.008Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T12:53:19.019Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T12:53:19.048Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T12:59:22.477Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T12:59:22.508Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T12:59:22.517Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T12:59:22.548Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:02:48.376Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:02:48.390Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:02:48.398Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:02:48.427Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:03:57.770Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:03:57.879Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:03:57.889Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:03:57.916Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:04:17.244Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:04:17.260Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:04:17.271Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:04:17.301Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:04:18.461Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:04:18.476Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:04:18.483Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:04:18.510Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:04:26.696Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:04:26.710Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:04:26.719Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:05:02.695Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:05:02.711Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:05:02.720Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:05:02.748Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-p3OqGT_Q.css","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-24T13:05:28.267Z"}
-{"level":"error","message":"Unhandled error: Not allowed by CORS","method":"GET","path":"/assets/index-D3N0LkwA.js","stack":"Error: Not allowed by CORS\n    at origin (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\server.js:43:16)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:219:13\n    at optionsCallback (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:199:9)\n    at corsMiddleware (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\cors\\lib\\index.js:204:7)\n    at Layer.handle [as handle_request] (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at trim_prefix (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:328:13)\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:286:9\n    at Function.process_params (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:346:12)\n    at next (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\router\\index.js:280:10)\n    at expressInit (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\express\\lib\\middleware\\init.js:40:5)","timestamp":"2025-07-24T13:05:28.275Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:09:01.358Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:09:01.386Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:09:01.395Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:09:01.425Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:34:28.239Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:34:28.297Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:34:28.336Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:34:28.441Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:37:42.357Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:37:42.377Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:37:42.392Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:37:42.428Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:40:44.894Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:40:44.920Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:40:44.936Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:40:44.966Z"}
-{"imageUrl":"https://res.cloudinary.com/dzjzyclid/image/upload/v1753365059/student_profiles/ww6avao6zazwvjnykn4y.png","level":"info","message":"Image uploaded successfully to Cloudinary","timestamp":"2025-07-24T13:51:00.895Z"}
-{"imageUrl":"https://res.cloudinary.com/dzjzyclid/image/upload/v1753365060/student_profiles/qdwyutnjduw6mypfa5f9.jpg","level":"info","message":"Image uploaded successfully to Cloudinary","timestamp":"2025-07-24T13:51:02.228Z"}
-{"imageUrl":"https://res.cloudinary.com/dzjzyclid/image/upload/v1753365062/student_profiles/ee9sxrxh6gimidtsqi72.webp","level":"info","message":"Image uploaded successfully to Cloudinary","timestamp":"2025-07-24T13:51:03.623Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:51:48.008Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:51:48.040Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:51:48.065Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:51:48.104Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T13:52:05.941Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T13:52:05.957Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T13:52:05.967Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T13:52:05.997Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:15:00.722Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:15:00.755Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:15:00.772Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:15:00.804Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:21:29.189Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:21:29.214Z"}
-{"level":"info","message":"Default admin user created.","timestamp":"2025-07-24T14:21:29.224Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:21:29.253Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:27:01.530Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:27:01.555Z"}
-{"level":"info","message":"Default admin user created.","timestamp":"2025-07-24T14:27:01.572Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:27:01.604Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:27:55.420Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:27:55.437Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:27:55.449Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:27:55.490Z"}
-{"level":"error","message":"Unhandled error: relation \"session\" does not exist","method":"GET","path":"/api/auth/status","stack":"error: relation \"session\" does not exist\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\connect-pg-simple\\index.js:322:21)","timestamp":"2025-07-24T14:29:27.548Z"}
-{"level":"error","message":"Unhandled error: relation \"session\" does not exist","method":"GET","path":"/api/auth/status","stack":"error: relation \"session\" does not exist\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\connect-pg-simple\\index.js:322:21)","timestamp":"2025-07-24T14:29:57.852Z"}
-{"level":"error","message":"Unhandled error: relation \"session\" does not exist","method":"GET","path":"/api/auth/status","stack":"error: relation \"session\" does not exist\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\connect-pg-simple\\index.js:322:21)","timestamp":"2025-07-24T14:30:27.850Z"}
-{"level":"error","message":"Unhandled error: relation \"session\" does not exist","method":"GET","path":"/api/auth/status","stack":"error: relation \"session\" does not exist\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\connect-pg-simple\\index.js:322:21)","timestamp":"2025-07-24T14:30:57.836Z"}
-{"level":"error","message":"Unhandled error: relation \"session\" does not exist","method":"GET","path":"/api/auth/status","stack":"error: relation \"session\" does not exist\n    at D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\pg-pool\\index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async PGStore._asyncQuery (D:\\WebDevelopment\\ReadersDenLibrary\\Backend\\node_modules\\connect-pg-simple\\index.js:322:21)","timestamp":"2025-07-24T14:32:25.943Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:39:17.759Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:39:17.772Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:39:17.801Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:39:17.844Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:39:29.576Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:39:29.593Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:39:29.603Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:39:29.630Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:48:09.476Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:48:09.512Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:48:09.531Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:48:09.624Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:54:03.027Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:54:03.048Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:54:03.063Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:54:03.096Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T14:59:10.105Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T14:59:10.132Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T14:59:10.151Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T14:59:10.183Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T15:12:53.236Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T15:12:53.277Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T15:12:53.286Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T15:12:53.316Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T16:59:27.656Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T16:59:27.792Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T16:59:27.812Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T16:59:27.839Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T17:01:05.805Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T17:01:05.825Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T17:01:05.838Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T17:01:05.868Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T17:01:39.728Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T17:01:39.747Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T17:01:39.756Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T17:01:39.787Z"}
-{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-24T17:02:04.374Z"}
-{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-24T17:02:04.385Z"}
-{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-24T17:02:04.414Z"}
-{"level":"info","message":"Database connected successfully","timestamp":"2025-07-24T17:02:04.457Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-07-22T16:23:39.208Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-22T16:23:39.362Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-22T16:23:39.423Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-22T16:23:39.662Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-07-22T16:41:34.159Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-22T16:41:34.279Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-22T16:41:34.305Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-22T16:41:34.383Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-07-22T16:43:51.040Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-22T16:43:51.066Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-22T16:43:51.082Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-22T16:43:51.134Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-07-22T16:43:58.910Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-07-22T16:43:58.929Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-07-22T16:43:58.945Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-07-22T16:43:58.983Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-08-07T16:55:04.286Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-08-07T16:55:04.383Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-08-07T16:55:04.440Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-08-07T16:55:04.492Z"}
+{"level":"info","message":"Database connected successfully","timestamp":"2025-08-07T17:06:12.059Z"}
+{"level":"info","message":"Session table checked/initialized successfully","timestamp":"2025-08-07T17:06:12.095Z"}
+{"level":"info","message":"Admin user(s) already exist, skipping default admin creation.","timestamp":"2025-08-07T17:06:12.114Z"}
+{"level":"info","message":"Server running on port 3000","timestamp":"2025-08-07T17:06:12.167Z"}

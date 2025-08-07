@@ -185,8 +185,7 @@ const initializeRoute = (filePath, poolInstance) => {
 };
 
 const userRoutes = initializeRoute('./routes/users', pool);
-// Initialize routes with their dependencies
-const studentRouter = require('./routes/students')(pool);
+const studentRoutes = initializeRoute('./routes/students', pool);
 const scheduleRoutes = initializeRoute('./routes/schedules', pool);
 const seatsRoutes = initializeRoute('./routes/seats', pool);
 const settingsRoutes = initializeRoute('./routes/settings', pool);
@@ -201,46 +200,11 @@ const branchesRoutes = initializeRoute('./routes/branches', pool);
 const productsRoutes = initializeRoute('./routes/products', pool);
 const lockersRoutes = initializeRoute('./routes/lockers', pool);
 
-// Public routes (no authentication required)
 app.use('/api/auth', authRoutes);
-
-// Public student registration endpoint - explicitly use the route handler
-app.post('/api/students/public/register', (req, res, next) => {
-  // Find the public/register route handler in the student router
-  const publicRegisterHandler = studentRouter.stack.find(layer => 
-    layer.route && 
-    layer.route.path === '/public/register' && 
-    layer.route.methods.post
-  );
-  
-  if (publicRegisterHandler && publicRegisterHandler.route) {
-    return publicRegisterHandler.handle(req, res, next);
-  }
-  
-  // If handler not found, return 404
-  res.status(404).json({ success: false, message: 'Registration endpoint not found' });
-});
-
-// Public branches endpoint
-app.get('/api/branches/public', (req, res, next) => {
-  // Find the public route handler in the branches router
-  const publicBranchesHandler = branchesRoutes.stack.find(layer => 
-    layer.route && 
-    layer.route.path === '/public' && 
-    layer.route.methods.get
-  );
-  
-  if (publicBranchesHandler && publicBranchesHandler.route) {
-    return publicBranchesHandler.handle(req, res, next);
-  }
-  
-  // If handler not found, return 404
-  res.status(404).json({ success: false, message: 'Branches endpoint not found' });
-});
-
-// Protected routes (require authentication)
 app.use('/api/users', authenticateUser, userRoutes);
-app.use('/api/students', authenticateUser, studentRouter);
+
+// ✅ FIX: Moved permission checks inside the route files for more granular control
+app.use('/api/students', authenticateUser, studentRoutes);
 app.use('/api/schedules', authenticateUser, scheduleRoutes);
 app.use('/api/seats', authenticateUser, seatsRoutes);
 app.use('/api/branches', authenticateUser, branchesRoutes); 

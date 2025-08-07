@@ -5,17 +5,6 @@ module.exports = (pool) => {
   // ✅ FIX: Import the checkPermissions function
   const { checkPermissions } = require('./auth');
 
-  // Public endpoint to get branches (no authentication required)
-  router.get('/public', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT id, name, code FROM branches ORDER BY id ASC');
-      res.json({ branches: result.rows });
-    } catch (err) {
-      console.error('Error fetching public branches:', err);
-      res.status(500).json({ message: 'Server error while fetching branches', error: err.message });
-    }
-  });
-
   // ✅ FIX: Allow users who can manage students to also read branch data
   router.get('/', checkPermissions(['manage_branches', 'manage_library_students'], 'OR'), async (req, res) => {
     try {

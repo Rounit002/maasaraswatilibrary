@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import Select from 'react-select';
 
-// FIX: Added 'discount' property to the Student interface
+// Comprehensive Student interface combining details from all pages
 interface Student {
   id: number;
   name: string;
@@ -54,7 +54,6 @@ interface Student {
   shiftTitle?: string;
   seatId?: number;
   seatNumber?: string;
-  discount?: number; // This property is now correctly defined
 }
 
 interface Seat {
@@ -63,28 +62,11 @@ interface Seat {
   studentId?: number | null;
 }
 
-// FIX: Define the payload for the renewStudent API call
-interface RenewStudentPayload {
-  name: string;
-  registrationNumber?: string;
-  fatherName?: string;
-  aadharNumber?: string;
-  address: string;
-  membershipStart: string;
-  membershipEnd: string;
-  email: string;
-  phone: string;
-  branchId: number;
-  shiftIds: number[];
-  seatId?: number;
-  totalFee: number;
-  cash: number;
-  online: number;
-  securityMoney: number;
-  remark?: string;
-  discount?: number; // This property is now correctly defined
+interface Schedule {
+    id: number;
+    title: string;
+    fee: number;
 }
-
 
 const hasPermissions = (user: any): user is { permissions: string[] } => {
   return user && 'permissions' in user && Array.isArray(user.permissions);
@@ -102,6 +84,7 @@ const ExpiredMemberships = () => {
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
+  // State for the new branch filter
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<{ value: number | null; label: string } | null>(null);
   const [branchFilterOptions, setBranchFilterOptions] = useState<any[]>([]);
 
@@ -115,22 +98,29 @@ const ExpiredMemberships = () => {
   const [phoneInput, setPhoneInput] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(addMonths(new Date(), 1));
+  
+  const [allShifts, setAllShifts] = useState<Schedule[]>([]);
   const [shiftOptions, setShiftOptions] = useState<any[]>([]);
   const [seatOptions, setSeatOptions] = useState<any[]>([]);
   const [branchOptions, setBranchOptions] = useState<any[]>([]);
-  const [selectedShift, setSelectedShift] = useState<any>(null);
+  
+  const [selectedShifts, setSelectedShifts] = useState<any[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
+  
   const [totalFee, setTotalFee] = useState<string>('');
   const [cash, setCash] = useState<string>('');
   const [online, setOnline] = useState<string>('');
   const [securityMoney, setSecurityMoney] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
-  const [discount, setDiscount] = useState<string>('');
 
+  const [loadingSeats, setLoadingSeats] = useState(false);
+  const [loadingShifts, setLoadingShifts] = useState(false);
+  
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Effect to fetch supporting data (for filters and dialogs) once on component mount
   useEffect(() => {
     (async () => {
       try {
@@ -139,7 +129,13 @@ const ExpiredMemberships = () => {
           api.getBranches(),
         ]);
 
-        setShiftOptions(shiftsResp.schedules.map((shift: any) => ({ value: shift.id, label: shift.title })));
+        const formattedShifts = shiftsResp.schedules.map((shift: any) => ({
+             value: shift.id, 
+             label: `${shift.title} - [Fee: ${shift.fee}]`,
+             fee: shift.fee ?? 0
+        }));
+        setAllShifts(formattedShifts);
+        setShiftOptions(formattedShifts);
         
         setBranchOptions(branchesResp.map((branch: any) => ({ value: branch.id, label: branch.name })));
         
@@ -154,6 +150,7 @@ const ExpiredMemberships = () => {
     })();
   }, []);
 
+  // Effect to fetch expired students when the component mounts or the branch filter changes
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -169,34 +166,83 @@ const ExpiredMemberships = () => {
     })();
   }, [selectedBranchFilter]);
 
-
+  // Effect to fetch seats when a branch is selected in the dialog
   useEffect(() => {
-    if (selectedShift && selectedStudent) {
-      const fetchSeatsForShift = async () => {
+    const fetchSeatsForBranch = async () => {
+      if (selectedBranch?.value && selectedStudent) {
+        setLoadingSeats(true);
         try {
-          const response = await api.getSeats({ shiftId: selectedShift.value });
+          const response = await api.getSeats({ branchId: selectedBranch.value });
           const allSeats: Seat[] = response.seats;
-          const availableSeats = allSeats.filter((seat: any) => !seat.studentId || seat.studentId === selectedStudent.id);
+          const availableSeats = allSeats.filter(seat => !seat.studentId || seat.studentId === selectedStudent.id);
           setSeatOptions([
             { value: null, label: 'None' },
-            ...availableSeats.map((seat: any) => ({ value: seat.id, label: seat.seatNumber }))
+            ...availableSeats.map(seat => ({ value: seat.id, label: seat.seatNumber }))
           ]);
-          if (selectedSeat && !availableSeats.some((seat: any) => seat.id === selectedSeat.value) && selectedSeat.value !== null) {
-            setSelectedSeat(null);
-          }
         } catch (error) {
-          console.error('Error fetching seats for shift:', error);
+          console.error('Error fetching seats for branch:', error);
           toast.error('Failed to fetch seats');
+        } finally {
+          setLoadingSeats(false);
         }
-      };
-      fetchSeatsForShift();
+      } else {
+        setSeatOptions([{ value: null, label: 'None' }]);
+      }
+    };
+    if (renewDialogOpen) {
+      fetchSeatsForBranch();
     }
-  }, [selectedShift, selectedStudent]);
+  }, [selectedBranch, selectedStudent, renewDialogOpen]);
+
+  // Effect to fetch available shifts when a seat is selected
+  useEffect(() => {
+    const fetchAvailableShiftsForSeat = async () => {
+      if (!selectedSeat?.value) {
+        setShiftOptions(allShifts.map(s => ({ ...s, isDisabled: false })));
+        return;
+      }
+      setLoadingShifts(true);
+      try {
+        const response = await api.getAvailableShifts(selectedSeat.value);
+        const availableShiftIds = new Set(response.availableShifts.map((s: any) => s.id));
+        
+        const studentCurrentShiftIds = selectedStudent?.assignments?.map(a => a.shiftId) ?? [];
+        studentCurrentShiftIds.forEach(id => availableShiftIds.add(id));
+
+        const newShiftOptions = allShifts.map(shift => ({
+          ...shift,
+          label: `${shift.label.split(' - ')[0]} ${availableShiftIds.has(shift.value) ? '(Available)' : '(Assigned)'}`,
+          isDisabled: !availableShiftIds.has(shift.value),
+        }));
+        setShiftOptions(newShiftOptions);
+
+        setSelectedShifts(prev => prev.filter(s => availableShiftIds.has(s.value)));
+      } catch (error) {
+        console.error('Failed to fetch available shifts:', error);
+        toast.error('Failed to load available shifts.');
+      } finally {
+        setLoadingShifts(false);
+      }
+    };
+    if (renewDialogOpen) {
+      fetchAvailableShiftsForSeat();
+    }
+  }, [selectedSeat, allShifts, selectedStudent, renewDialogOpen]);
+  
+  // Effect to auto-calculate fee when one shift is selected
+  useEffect(() => {
+    if (selectedShifts.length === 1) {
+        const selectedShiftDetail = allShifts.find(shift => shift.value === selectedShifts[0].value);
+        if (selectedShiftDetail) {
+            setTotalFee(selectedShiftDetail.fee.toString());
+        }
+    }
+  }, [selectedShifts, allShifts]);
 
   const handleRenewClick = async (student: Student) => {
     try {
         setLoading(true);
-        const fullStudentDetails: Student = await api.getStudent(student.id); // Ensure the fetched type is Student
+        const fullStudentDetails = await api.getStudent(student.id);
         setSelectedStudent(fullStudentDetails);
 
         setStartDate(new Date());
@@ -212,18 +258,18 @@ const ExpiredMemberships = () => {
         setSelectedBranch(fullStudentDetails.branchId ? { value: fullStudentDetails.branchId, label: fullStudentDetails.branchName } : null);
         
         const currentAssignment = fullStudentDetails.assignments?.[0];
-        setSelectedShift(currentAssignment ? { value: currentAssignment.shiftId, label: currentAssignment.shiftTitle } : null);
+        setSelectedSeat(currentAssignment ? { value: currentAssignment.seatId, label: currentAssignment.seatNumber } : null);
         
-        setTimeout(() => {
-             setSelectedSeat(currentAssignment ? { value: currentAssignment.seatId, label: currentAssignment.seatNumber } : null);
-        }, 150);
-
+        const currentShifts = fullStudentDetails.assignments?.map(a => ({
+          value: a.shiftId,
+          label: a.shiftTitle
+        })) ?? [];
+        setSelectedShifts(currentShifts);
+        
         setTotalFee(fullStudentDetails.totalFee ? fullStudentDetails.totalFee.toString() : '0');
         setCash(fullStudentDetails.cash ? fullStudentDetails.cash.toString() : '0');
         setOnline(fullStudentDetails.online ? fullStudentDetails.online.toString() : '0');
         setSecurityMoney(fullStudentDetails.securityMoney ? fullStudentDetails.securityMoney.toString() : '0');
-        // FIX: This line will no longer cause an error because 'discount' is in the Student interface
-        setDiscount(fullStudentDetails.discount ? fullStudentDetails.discount.toString() : '0');
         setRemark(fullStudentDetails.remark || '');
         
         setRenewDialogOpen(true);
@@ -244,16 +290,15 @@ const ExpiredMemberships = () => {
   const handleRenewSubmit = async () => {
     if (
       !selectedStudent || !startDate || !endDate ||
-      !nameInput.trim() || !phoneInput.trim() ||
-      !selectedShift?.value || !totalFee || !selectedBranch?.value
+      !nameInput.trim() || !phoneInput.trim() || !addressInput.trim() ||
+      !totalFee || !selectedBranch?.value || (selectedSeat?.value && selectedShifts.length === 0)
     ) {
-      toast.error('Please ensure Name, Phone, Branch, Shift, and Fee are filled correctly.');
+      toast.error('Please fill all required fields. If a seat is selected, at least one shift must be chosen.');
       return;
     }
 
     try {
-      // FIX: The payload now matches the RenewStudentPayload interface
-      const payload: RenewStudentPayload = {
+      await api.renewStudent(selectedStudent.id, {
         name: nameInput,
         registrationNumber: registrationNumberInput,
         fatherName: fatherNameInput,
@@ -264,17 +309,14 @@ const ExpiredMemberships = () => {
         email: emailInput,
         phone: phoneInput,
         branchId: selectedBranch.value,
-        shiftIds: [selectedShift.value],
+        shiftIds: selectedShifts.map(s => s.value),
         seatId: selectedSeat ? selectedSeat.value : undefined,
         totalFee: parseFloat(totalFee),
         cash: parseFloat(cash) || 0,
         online: parseFloat(online) || 0,
         securityMoney: parseFloat(securityMoney) || 0,
-        discount: parseFloat(discount) || 0,
         remark: remark.trim() || undefined,
-      };
-
-      await api.renewStudent(selectedStudent.id, payload);
+      });
 
       toast.success(`Membership renewed for ${selectedStudent.name}`);
       setRenewDialogOpen(false);
@@ -290,9 +332,9 @@ const ExpiredMemberships = () => {
 
   const cashAmount = parseFloat(cash) || 0;
   const onlineAmount = parseFloat(online) || 0;
-  const discountAmount = parseFloat(discount) || 0;
   const paid = cashAmount + onlineAmount;
-  const due = (parseFloat(totalFee) || 0) - discountAmount - paid;
+  const due = (parseFloat(totalFee) || 0) - paid;
+  const isFeeReadOnly = selectedShifts.length === 1;
 
   if (!user) {
     navigate('/login');
@@ -486,46 +528,42 @@ const ExpiredMemberships = () => {
                   placeholder="Select Branch"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium">Shift</label>
-                <Select
-                  options={shiftOptions}
-                  value={selectedShift}
-                  onChange={setSelectedShift}
-                  placeholder="Select Shift"
-                />
-              </div>
-              <div>
+               <div>
                 <label className="block text-sm font-medium">Seat</label>
                 <Select
                   options={seatOptions}
                   value={selectedSeat}
-                  onChange={setSelectedSeat}
+                  onChange={(option) => {
+                      setSelectedSeat(option);
+                      setSelectedShifts([]); // Reset shifts when seat changes
+                  }}
                   placeholder="Select Seat"
-                  isDisabled={!selectedShift}
+                  isLoading={loadingSeats}
+                  isDisabled={!selectedBranch}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Shift</label>
+                <Select
+                  isMulti
+                  options={shiftOptions}
+                  value={selectedShifts}
+                  onChange={setSelectedShifts}
+                  placeholder="Select Shifts"
+                  isLoading={loadingShifts}
+                  isDisabled={!selectedSeat?.value}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium">Total Fee</label>
                 <input
-                  className="w-full border rounded px-3 py-2 mt-1"
+                  className={`w-full border rounded px-3 py-2 mt-1 ${isFeeReadOnly ? 'bg-gray-100' : ''}`}
                   type="number"
                   value={totalFee}
                   onChange={(e) => setTotalFee(e.target.value)}
+                  readOnly={isFeeReadOnly}
                   min="0"
                   step="0.01"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Discount</label>
-                <input
-                  className="w-full border rounded px-3 py-2 mt-1"
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
-                  min="0"
-                  step="0.01"
-                  placeholder="Enter discount amount"
                 />
               </div>
               <div>
