@@ -33,6 +33,7 @@ interface Student {
   aadhaarBackUrl?: string | null;
   lockerId?: number | null;
   lockerNumber?: string | null;
+  lockerFee?: number | null;
   createdAt: string;
   assignments?: Array<{
     seatId: number;
@@ -91,6 +92,7 @@ interface FormData {
   shiftIds: number[];
   seatId: number | null;
   lockerId: number | null;
+  lockerFee: string;
   totalFee: string;
   cash: string;
   online: string;
@@ -122,6 +124,7 @@ interface UpdateStudentPayload {
   shiftIds: number[];
   seatId: number | null;
   lockerId: number | null;
+  lockerFee: number;
   cash: number;
   online: number;
   securityMoney: number;
@@ -148,6 +151,7 @@ const EditStudentForm: React.FC = () => {
     shiftIds: [],
     seatId: null,
     lockerId: null,
+    lockerFee: '0',
     totalFee: '',
     cash: '',
     online: '',
@@ -201,6 +205,7 @@ const EditStudentForm: React.FC = () => {
           shiftIds: currentShiftIds,
           seatId: student.assignments?.[0]?.seatId || null,
           lockerId: student.lockerId || null,
+          lockerFee: student.lockerFee?.toString() || '0',
           totalFee: student.totalFee.toString(),
           cash: student.cash.toString(),
           online: student.online.toString(),
@@ -283,13 +288,10 @@ const EditStudentForm: React.FC = () => {
         const selectedShiftIds = option ? option.map((opt: { value: number }) => opt.value) : [];
         
         setFormData(prev => {
-            let newTotalFee = prev.totalFee;
+            let newTotalFee = '0';
             if (selectedShiftIds.length === 1) {
                 const selectedShift = shifts.find(shift => shift.id === selectedShiftIds[0]);
                 newTotalFee = selectedShift ? selectedShift.fee.toString() : '0';
-            } 
-            else if (prev.shiftIds.length === 1 && selectedShiftIds.length !== 1) {
-                newTotalFee = '0';
             }
         
             return {
@@ -300,7 +302,11 @@ const EditStudentForm: React.FC = () => {
         });
     } else if (name === 'lockerId') {
       const value = option ? option.value : null;
-      setFormData(prev => ({ ...prev, lockerId: value }));
+      setFormData(prev => ({
+        ...prev,
+        lockerId: value,
+        lockerFee: value === null ? '0' : prev.lockerFee,
+      }));
     }
   };
 
@@ -375,6 +381,7 @@ const EditStudentForm: React.FC = () => {
         shiftIds: formData.shiftIds,
         seatId: formData.seatId,
         lockerId: formData.lockerId,
+        lockerFee: parseFloat(formData.lockerFee) || 0,
         cash: parseFloat(formData.cash) || 0,
         online: parseFloat(formData.online) || 0,
         securityMoney: parseFloat(formData.securityMoney) || 0,
@@ -598,21 +605,33 @@ const EditStudentForm: React.FC = () => {
             isDisabled={!formData.branchId || lockers.length === 0}
           />
         </div>
-        <div>
-            <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">
-                {isFeeReadOnly ? 'Total Fee (Auto-calculated)' : 'Total Fee'}
-            </label>
-            <input
+        {formData.lockerId !== null && (
+            <div className="mt-4">
+              <label htmlFor="lockerFee" className="block text-sm font-medium text-gray-700 mb-1">Locker Fee</label>
+              <input
                 type="number"
-                id="totalFee"
-                name="totalFee"
-                value={formData.totalFee}
+                id="lockerFee"
+                name="lockerFee"
+                value={formData.lockerFee}
                 onChange={handleChange}
-                readOnly={isFeeReadOnly}
-                className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${
-                    isFeeReadOnly ? 'bg-gray-100' : ''
-                }`}
-            />
+                min="0"
+                step="0.01"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+              />
+            </div>
+        )}
+        <div>
+          <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">Membership Fee</label>
+           <input
+            type="number"
+            id="totalFee"
+            name="totalFee"
+            value={formData.totalFee}
+            onChange={handleChange}
+            readOnly={isFeeReadOnly}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300 ${isFeeReadOnly ? 'bg-gray-100' : ''}`}
+            required
+          />
         </div>
         <div>
           <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">Discount</label>

@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import api from '../services/api';
-import { Search, ChevronLeft, ChevronRight, Trash2, Eye, MessageCircle } from 'lucide-react';
+import { Search, ChevronRight, Trash2, Eye, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,6 +36,7 @@ interface Student {
   membershipStart?: string;
   membershipEnd: string;
   totalFee?: number;
+  lockerFee?: number;
   amountPaid?: number;
   dueAmount?: number;
   cash?: number;
@@ -54,6 +55,9 @@ interface Student {
   shiftTitle?: string;
   seatId?: number;
   seatNumber?: string;
+  lockerId?: number | null;
+  lockerNumber?: string | null;
+  discount?: number;
 }
 
 interface Seat {
@@ -66,6 +70,13 @@ interface Schedule {
     id: number;
     title: string;
     fee: number;
+}
+
+interface Locker {
+  id: number;
+  lockerNumber: string;
+  isAssigned: boolean;
+  studentId?: number | null;
 }
 
 const hasPermissions = (user: any): user is { permissions: string[] } => {
@@ -103,19 +114,24 @@ const ExpiredMemberships = () => {
   const [shiftOptions, setShiftOptions] = useState<any[]>([]);
   const [seatOptions, setSeatOptions] = useState<any[]>([]);
   const [branchOptions, setBranchOptions] = useState<any[]>([]);
+  const [lockerOptions, setLockerOptions] = useState<any[]>([]);
   
   const [selectedShifts, setSelectedShifts] = useState<any[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
+  const [selectedLocker, setSelectedLocker] = useState<any>(null);
   
   const [totalFee, setTotalFee] = useState<string>('');
   const [cash, setCash] = useState<string>('');
   const [online, setOnline] = useState<string>('');
   const [securityMoney, setSecurityMoney] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
+  const [discount, setDiscount] = useState<string>('');
+  const [lockerFee, setLockerFee] = useState<string>('');
 
   const [loadingSeats, setLoadingSeats] = useState(false);
   const [loadingShifts, setLoadingShifts] = useState(false);
+  const [loadingLockers, setLoadingLockers] = useState(false);
   
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -166,31 +182,45 @@ const ExpiredMemberships = () => {
     })();
   }, [selectedBranchFilter]);
 
-  // Effect to fetch seats when a branch is selected in the dialog
+  // Effect to fetch seats and lockers when a branch is selected in the dialog
   useEffect(() => {
-    const fetchSeatsForBranch = async () => {
+    const fetchBranchSpecificData = async () => {
       if (selectedBranch?.value && selectedStudent) {
         setLoadingSeats(true);
+        setLoadingLockers(true);
         try {
-          const response = await api.getSeats({ branchId: selectedBranch.value });
-          const allSeats: Seat[] = response.seats;
+          const seatsPromise = api.getSeats({ branchId: selectedBranch.value });
+          const lockersPromise = api.getLockers(selectedBranch.value);
+          const [seatsResponse, lockersResponse] = await Promise.all([seatsPromise, lockersPromise]);
+          
+          const allSeats: Seat[] = seatsResponse.seats;
           const availableSeats = allSeats.filter(seat => !seat.studentId || seat.studentId === selectedStudent.id);
           setSeatOptions([
             { value: null, label: 'None' },
             ...availableSeats.map(seat => ({ value: seat.id, label: seat.seatNumber }))
           ]);
+
+          const allLockerItems: Locker[] = lockersResponse.lockers;
+          const availableLockers = allLockerItems.filter(locker => !locker.isAssigned || locker.studentId === selectedStudent.id);
+          setLockerOptions([
+              { value: null, label: 'None' },
+              ...availableLockers.map(locker => ({ value: locker.id, label: locker.lockerNumber }))
+          ]);
+
         } catch (error) {
-          console.error('Error fetching seats for branch:', error);
-          toast.error('Failed to fetch seats');
+          console.error('Error fetching seats and lockers for branch:', error);
+          toast.error('Failed to fetch seats and lockers');
         } finally {
           setLoadingSeats(false);
+          setLoadingLockers(false);
         }
       } else {
         setSeatOptions([{ value: null, label: 'None' }]);
+        setLockerOptions([{ value: null, label: 'None' }]);
       }
     };
     if (renewDialogOpen) {
-      fetchSeatsForBranch();
+      fetchBranchSpecificData();
     }
   }, [selectedBranch, selectedStudent, renewDialogOpen]);
 
@@ -229,14 +259,15 @@ const ExpiredMemberships = () => {
     }
   }, [selectedSeat, allShifts, selectedStudent, renewDialogOpen]);
   
-  // Effect to auto-calculate fee when one shift is selected
+  // Effect to auto-calculate membership fee when one shift is selected
   useEffect(() => {
-    if (selectedShifts.length === 1) {
-        const selectedShiftDetail = allShifts.find(shift => shift.value === selectedShifts[0].value);
-        if (selectedShiftDetail) {
-            setTotalFee(selectedShiftDetail.fee.toString());
-        }
-    }
+      if (selectedShifts.length === 1) {
+          const selectedShiftDetail = allShifts.find(shift => shift.value === selectedShifts[0].value);
+          const shiftFee = selectedShiftDetail ? selectedShiftDetail.fee : 0;
+          setTotalFee(shiftFee.toString());
+      } else {
+          setTotalFee('0');
+      }
   }, [selectedShifts, allShifts]);
 
   const handleRenewClick = async (student: Student) => {
@@ -267,11 +298,15 @@ const ExpiredMemberships = () => {
         setSelectedShifts(currentShifts);
         
         setTotalFee(fullStudentDetails.totalFee ? fullStudentDetails.totalFee.toString() : '0');
+        setLockerFee(fullStudentDetails.lockerFee ? fullStudentDetails.lockerFee.toString() : '0');
         setCash(fullStudentDetails.cash ? fullStudentDetails.cash.toString() : '0');
         setOnline(fullStudentDetails.online ? fullStudentDetails.online.toString() : '0');
         setSecurityMoney(fullStudentDetails.securityMoney ? fullStudentDetails.securityMoney.toString() : '0');
         setRemark(fullStudentDetails.remark || '');
         
+        setSelectedLocker(fullStudentDetails.lockerId ? { value: fullStudentDetails.lockerId, label: fullStudentDetails.lockerNumber } : null);
+        setDiscount(fullStudentDetails.discount ? fullStudentDetails.discount.toString() : '0');
+
         setRenewDialogOpen(true);
     } catch (error) {
         console.error("Failed to fetch student details for renewal:", error);
@@ -279,6 +314,18 @@ const ExpiredMemberships = () => {
     } finally {
         setLoading(false);
     }
+  };
+
+  const handleLockerChange = (option: any) => {
+    setSelectedLocker(option);
+    if (!option) {
+        setLockerFee('0');
+    }
+  };
+
+  const handleShiftChange = (options: any) => {
+    const newSelectedShifts = options || [];
+    setSelectedShifts(newSelectedShifts);
   };
 
   const handleWhatsAppClick = (phone: string) => {
@@ -311,6 +358,9 @@ const ExpiredMemberships = () => {
         branchId: selectedBranch.value,
         shiftIds: selectedShifts.map(s => s.value),
         seatId: selectedSeat ? selectedSeat.value : undefined,
+        lockerId: selectedLocker ? selectedLocker.value : undefined,
+        lockerFee: parseFloat(lockerFee) || 0,
+        discount: parseFloat(discount) || undefined,
         totalFee: parseFloat(totalFee),
         cash: parseFloat(cash) || 0,
         online: parseFloat(online) || 0,
@@ -333,7 +383,8 @@ const ExpiredMemberships = () => {
   const cashAmount = parseFloat(cash) || 0;
   const onlineAmount = parseFloat(online) || 0;
   const paid = cashAmount + onlineAmount;
-  const due = (parseFloat(totalFee) || 0) - paid;
+  const discountAmount = parseFloat(discount) || 0;
+  const due = (parseFloat(totalFee) || 0) - discountAmount - paid;
   const isFeeReadOnly = selectedShifts.length === 1;
 
   if (!user) {
@@ -535,11 +586,12 @@ const ExpiredMemberships = () => {
                   value={selectedSeat}
                   onChange={(option) => {
                       setSelectedSeat(option);
-                      setSelectedShifts([]); // Reset shifts when seat changes
+                      setSelectedShifts([]);
                   }}
                   placeholder="Select Seat"
                   isLoading={loadingSeats}
                   isDisabled={!selectedBranch}
+                  isClearable
                 />
               </div>
               <div>
@@ -548,14 +600,39 @@ const ExpiredMemberships = () => {
                   isMulti
                   options={shiftOptions}
                   value={selectedShifts}
-                  onChange={setSelectedShifts}
+                  onChange={handleShiftChange}
                   placeholder="Select Shifts"
                   isLoading={loadingShifts}
                   isDisabled={!selectedSeat?.value}
                 />
               </div>
+               <div>
+                  <label className="block text-sm font-medium">Locker</label>
+                  <Select
+                      options={lockerOptions}
+                      value={selectedLocker}
+                      onChange={handleLockerChange}
+                      placeholder="Select Locker"
+                      isLoading={loadingLockers}
+                      isDisabled={!selectedBranch}
+                      isClearable
+                  />
+              </div>
+              {selectedLocker && (
+                  <div>
+                      <label className="block text-sm font-medium">Locker Fee</label>
+                      <input
+                          className="w-full border rounded px-3 py-2 mt-1"
+                          type="number"
+                          value={lockerFee}
+                          onChange={(e) => setLockerFee(e.target.value)}
+                          min="0"
+                          step="0.01"
+                      />
+                  </div>
+              )}
               <div>
-                <label className="block text-sm font-medium">Total Fee</label>
+                <label className="block text-sm font-medium">Membership Fee</label>
                 <input
                   className={`w-full border rounded px-3 py-2 mt-1 ${isFeeReadOnly ? 'bg-gray-100' : ''}`}
                   type="number"
@@ -565,6 +642,17 @@ const ExpiredMemberships = () => {
                   min="0"
                   step="0.01"
                 />
+              </div>
+              <div>
+                  <label className="block text-sm font-medium">Discount</label>
+                  <input
+                      className="w-full border rounded px-3 py-2 mt-1"
+                      type="number"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                      min="0"
+                      step="0.01"
+                  />
               </div>
               <div>
                 <label className="block text-sm font-medium">Cash Payment</label>

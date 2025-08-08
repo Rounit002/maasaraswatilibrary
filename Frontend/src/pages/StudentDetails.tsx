@@ -22,6 +22,7 @@ interface Student {
   membershipStart: string;
   membershipEnd: string;
   totalFee: number;
+  lockerFee: number;
   amountPaid: number;
   dueAmount: number;
   cash: number;
@@ -79,6 +80,7 @@ const StudentDetails: React.FC = () => {
           ...studentData,
           status: isExpired ? 'expired' : studentData.status,
           totalFee: studentData.totalFee,
+          lockerFee: studentData.lockerFee,
           amountPaid: studentData.amountPaid,
           dueAmount: studentData.dueAmount,
           cash: studentData.cash,
@@ -280,6 +282,12 @@ const StudentDetails: React.FC = () => {
                     ) : (
                       <p className="text-gray-600">No shifts assigned</p>
                     )}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-medium">Locker Fee</h2>
+                    <p className="text-gray-600">
+                      {student.lockerFee !== undefined && student.lockerFee !== null ? `Rs. ${student.lockerFee.toFixed(2)}` : 'N/A'}
+                    </p>
                   </div>
                   <div>
                     <h2 className="text-lg font-medium">Total Fee</h2>

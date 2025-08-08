@@ -244,13 +244,32 @@ module.exports = (pool) => {
       const id = parseInt(req.params.id, 10);
       const queryText = `
         SELECT
-          s.*,
-          b.name AS branch_name,
-          l.locker_number,
-          CASE
-            WHEN s.membership_end < CURRENT_DATE THEN 'expired'
-            ELSE 'active'
-          END AS status
+          s.id,
+          s.name,
+          s.email,
+          s.phone,
+          s.address,
+          s.registration_number,
+          s.father_name,
+          s.aadhar_number,
+          s.is_active,
+          s.profile_image_url,
+          s.aadhaar_front_url,
+          s.aadhaar_back_url,
+          s.status,
+          TO_CHAR(s.membership_start, 'YYYY-MM-DD') AS membership_start,
+          TO_CHAR(s.membership_end, 'YYYY-MM-DD') AS membership_end,
+          s.total_fee,
+          s.amount_paid,
+          s.due_amount,
+          s.cash,
+          s.online,
+          s.security_money,
+          s.remark,
+          s.discount,
+          s.locker_fee,
+          b.name as branch_name,
+          l.locker_number
         FROM students s
         LEFT JOIN branches b ON s.branch_id = b.id
         LEFT JOIN locker l ON s.locker_id = l.id
@@ -284,7 +303,8 @@ module.exports = (pool) => {
         aadhaar_front_url: studentData.aadhaar_front_url || '',
         aadhaar_back_url: studentData.aadhaar_back_url || '',
         assignments: assignments.rows,
-        locker_number: studentData.locker_number || null,
+        lockerFee: parseFloat(studentData.locker_fee || 0),
+        lockerNumber: studentData.locker_number || null,
       });
     } catch (err) {
       console.error('Error in students/:id route:', err.stack);
@@ -361,7 +381,8 @@ module.exports = (pool) => {
       const {
         name, email, phone, address, branch_id, membership_start, membership_end,
         total_fee, amount_paid, shift_ids, seat_id, cash, online, security_money, remark, profile_image_url,
-        registration_number, father_name, aadhar_number, locker_id, aadhaar_front_url, aadhaar_back_url, discount
+        registration_number, father_name, aadhar_number, locker_id, aadhaar_front_url, aadhaar_back_url, discount,
+        locker_fee
       } = req.body;
 
       console.log('Received request body for POST /students:', req.body);
@@ -380,6 +401,8 @@ module.exports = (pool) => {
       const feeValue = parseFloat(total_fee || 0);
       const paidValue = parseFloat(amount_paid || 0);
       const discountValue = parseFloat(discount || 0);
+      const lockerFeeValue = parseFloat(locker_fee || 0);
+
       if (isNaN(feeValue) || feeValue < 0) {
         console.error('Validation failed: Total fee invalid', { total_fee });
         await client.query('ROLLBACK');
@@ -469,15 +492,16 @@ module.exports = (pool) => {
           name, email, phone, address, branch_id, membership_start, membership_end,
           total_fee, amount_paid, due_amount, cash, online, security_money, remark, 
           profile_image_url, aadhaar_front_url, aadhaar_back_url, status, locker_id,
-          registration_number, father_name, aadhar_number, discount, is_active, created_at
+          registration_number, father_name, aadhar_number, discount, is_active, locker_fee, created_at
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW()
         ) RETURNING *`,
         [
           name, email, phone, address, branchIdNum, membership_start, membership_end,
           feeValue, paidValue, dueAmount, cashValue, onlineValue, securityMoneyValue, remark || null, 
           profile_image_url || null, aadhaar_front_url || null, aadhaar_back_url || null, status, lockerIdNum,
-          registration_number || null, father_name || null, aadhar_number || null, discountValue, true
+          registration_number || null, father_name || null, aadhar_number || null, discountValue, true,
+          lockerFeeValue
         ]
       );
       const student = result.rows[0];
@@ -509,8 +533,8 @@ module.exports = (pool) => {
           seat_id, shift_id, branch_id,
           registration_number, father_name, aadhar_number,
           profile_image_url, aadhaar_front_url, aadhaar_back_url,
-          locker_id, discount, changed_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())`,
+          locker_id, discount, locker_fee, changed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, NOW())`,
         [
           student.id, student.name, student.email, student.phone, student.address,
           student.membership_start, student.membership_end, student.status,
@@ -519,7 +543,8 @@ module.exports = (pool) => {
           seatIdNum, firstShiftId, branchIdNum,
           student.registration_number, student.father_name, student.aadhar_number,
           student.profile_image_url || '', student.aadhaar_front_url || '', student.aadhaar_back_url || '',
-          lockerIdNum, student.discount
+          lockerIdNum, student.discount,
+          lockerFeeValue
         ]
       );
 
@@ -560,7 +585,8 @@ module.exports = (pool) => {
         name, email, phone, address, branch_id, membership_start, membership_end,
         total_fee, amount_paid, shift_ids, seat_id, cash, online, security_money, remark,
         registration_number, father_name, aadhar_number, profile_image_url, locker_id,
-        aadhaar_front_url, aadhaar_back_url, discount
+        aadhaar_front_url, aadhaar_back_url, discount,
+        locker_fee
       } = req.body;
       
       if (!name || !phone || !address || !branch_id || !membership_start || !membership_end) {
@@ -575,6 +601,7 @@ module.exports = (pool) => {
       const feeValue = parseFloat(total_fee || 0);
       const paidValue = parseFloat(amount_paid || 0);
       const discountValue = parseFloat(discount || 0);
+      const lockerFeeValue = parseFloat(locker_fee || 0);
       const dueAmountValue = feeValue - discountValue - paidValue;
       const status = new Date(membership_end) < new Date() ? 'expired' : 'active';
 
@@ -603,7 +630,8 @@ module.exports = (pool) => {
              amount_paid = $9, due_amount = $10, cash = $11, online = $12, 
              security_money = $13, remark = $14, status = $15,
              registration_number = $16, father_name = $17, aadhar_number = $18, 
-             profile_image_url = $19, locker_id = $20, aadhaar_front_url = $21, aadhaar_back_url = $22, discount = $23
+             profile_image_url = $19, locker_id = $20, aadhaar_front_url = $21, aadhaar_back_url = $22, discount = $23,
+             locker_fee = $25
          WHERE id = $24
          RETURNING *`,
         [
@@ -612,7 +640,8 @@ module.exports = (pool) => {
           security_money, remark || null, status, 
           registration_number || null, father_name || null, aadhar_number || null, 
           profile_image_url || null, lockerIdNum, aadhaar_front_url || null, aadhaar_back_url || null, discountValue,
-          id
+          id,
+          lockerFeeValue
         ]
       );
 
@@ -648,7 +677,7 @@ module.exports = (pool) => {
              total_fee = $8, amount_paid = $9, due_amount = $10, cash = $11, online = $12, security_money = $13,
              remark = $14, seat_id = $15, shift_id = $16, branch_id = $17, registration_number = $18,
              father_name = $19, aadhar_number = $20, profile_image_url = $21, 
-             aadhaar_front_url = $22, aadhaar_back_url = $23, locker_id = $24, discount = $25, changed_at = NOW()
+             aadhaar_front_url = $22, aadhaar_back_url = $23, locker_id = $24, discount = $25, locker_fee = $27, changed_at = NOW()
          WHERE id = (SELECT id FROM student_membership_history WHERE student_id = $26 ORDER BY id DESC LIMIT 1)`,
          [
            updatedStudent.name, updatedStudent.email, updatedStudent.phone, updatedStudent.address,
@@ -658,7 +687,8 @@ module.exports = (pool) => {
            seatIdNum, firstShiftId, updatedStudent.branch_id, updatedStudent.registration_number,
            updatedStudent.father_name, updatedStudent.aadhar_number, updatedStudent.profile_image_url || '',
            updatedStudent.aadhaar_front_url || '', updatedStudent.aadhaar_back_url || '', lockerIdNum, updatedStudent.discount,
-           id
+           id,
+           lockerFeeValue
          ]
       );
       
@@ -755,7 +785,8 @@ module.exports = (pool) => {
         name, registration_number, father_name, aadhar_number, address,
         membership_start, membership_end, email, phone, branch_id,
         shift_ids, seat_id, total_fee, cash, online, security_money, remark,
-        profile_image_url, aadhaar_front_url, aadhaar_back_url, locker_id, discount
+        profile_image_url, aadhaar_front_url, aadhaar_back_url, locker_id, discount,
+        locker_fee
       } = req.body;
 
       if (!membership_start || !membership_end || !name || !phone || !branch_id) {
@@ -773,6 +804,7 @@ module.exports = (pool) => {
       const onlineValue = parseFloat(online || 0);
       const securityMoneyValue = parseFloat(security_money || 0);
       const discountValue = parseFloat(discount || 0);
+      const lockerFeeValue = parseFloat(locker_fee || 0);
       const amount_paid = cashValue + onlineValue;
       const due_amount = feeValue - discountValue - amount_paid;
       const status = new Date(membership_end) < new Date() ? 'expired' : 'active';
@@ -811,7 +843,8 @@ module.exports = (pool) => {
              email = $9, phone = $10, branch_id = $11,
              total_fee = $12, amount_paid = $13, due_amount = $14,
              cash = $15, online = $16, security_money = $17, remark = $18,
-             profile_image_url = $19, aadhaar_front_url = $20, aadhaar_back_url = $21, locker_id = $22, discount = $23
+             profile_image_url = $19, aadhaar_front_url = $20, aadhaar_back_url = $21, locker_id = $22, discount = $23,
+             locker_fee = $25
          WHERE id = $24
          RETURNING *`,
         [
@@ -821,7 +854,8 @@ module.exports = (pool) => {
           feeValue, amount_paid, due_amount,
           cashValue, onlineValue, securityMoneyValue, remark || null,
           profile_image_url || null, aadhaar_front_url || null, aadhaar_back_url || null, lockerIdNum, discountValue,
-          id
+          id,
+          lockerFeeValue
         ]
       );
 
@@ -859,8 +893,8 @@ module.exports = (pool) => {
           seat_id, shift_id, branch_id,
           registration_number, father_name, aadhar_number,
           profile_image_url, aadhaar_front_url, aadhaar_back_url,
-          locker_id, discount, changed_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())`,
+          locker_id, discount, locker_fee, changed_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, NOW())`,
         [
           updated.id, updated.name, updated.email, updated.phone, updated.address,
           updated.membership_start, updated.membership_end, updated.status,
@@ -869,7 +903,8 @@ module.exports = (pool) => {
           seatIdNum, firstShiftId, branchIdNum,
           updated.registration_number, updated.father_name, updated.aadhar_number,
           updated.profile_image_url || '', updated.aadhaar_front_url || '', updated.aadhaar_back_url || '',
-          lockerIdNum, updated.discount
+          lockerIdNum, updated.discount,
+          lockerFeeValue
         ]
       );
 

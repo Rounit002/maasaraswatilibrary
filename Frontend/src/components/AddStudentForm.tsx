@@ -62,6 +62,7 @@ interface FormData {
   seatId: number | null;
   shiftIds: number[];
   lockerId: number | null;
+  lockerFee: string;
   totalFee: string;
   cash: string;
   online: string;
@@ -93,6 +94,7 @@ const AddStudentForm: React.FC = () => {
     seatId: null,
     shiftIds: [],
     lockerId: null,
+    lockerFee: '0',
     totalFee: '0',
     cash: '',
     online: '',
@@ -218,6 +220,7 @@ const AddStudentForm: React.FC = () => {
         seatId: null,
         shiftIds: [],
         lockerId: null,
+        lockerFee: '0',
         totalFee: '0',
       }));
     } else if (name === 'seatId') {
@@ -228,22 +231,25 @@ const AddStudentForm: React.FC = () => {
         shiftIds: [],
         totalFee: '0',
       }));
+    } else if (name === 'lockerId') {
+      const value = option ? option.value : null;
+      setFormData(prev => ({
+        ...prev,
+        lockerId: value,
+        // Reset locker fee when locker is deselected
+        lockerFee: value === null ? '0' : prev.lockerFee,
+      }));
     } else if (name === 'shiftIds') {
         const selectedShiftIds = option ? option.map((opt: { value: number }) => opt.value) : [];
         
         setFormData(prev => {
-            let newTotalFee = prev.totalFee;
+            let newTotalFee = '0';
             // Auto-calculate fee only if exactly one shift is selected
             if (selectedShiftIds.length === 1) {
                 const selectedShift = shifts.find(shift => shift.id === selectedShiftIds[0]);
                 newTotalFee = selectedShift ? selectedShift.fee.toString() : '0';
             } 
-            // If transitioning from one shift to multiple or zero, reset fee to prompt manual entry
-            else if (prev.shiftIds.length === 1 && selectedShiftIds.length !== 1) {
-                newTotalFee = '0';
-            }
-            // Otherwise, keep the user's manually entered fee
-        
+            
             return {
                 ...prev,
                 shiftIds: selectedShiftIds,
@@ -390,6 +396,7 @@ const AddStudentForm: React.FC = () => {
         membershipStart: formData.membershipStart,
         membershipEnd: formData.membershipEnd,
         totalFee: formData.totalFee ? parseFloat(formData.totalFee) : 0,
+        lockerFee: formData.lockerFee ? parseFloat(formData.lockerFee) : 0,
         amountPaid: (parseFloat(formData.cash) || 0) + (parseFloat(formData.online) || 0),
         cash: parseFloat(formData.cash) || 0,
         online: parseFloat(formData.online) || 0,
@@ -605,9 +612,26 @@ const AddStudentForm: React.FC = () => {
             isDisabled={!formData.branchId || lockers.length === 0}
           />
         </div>
+        {formData.lockerId !== null && (
+          <div>
+            <label htmlFor="lockerFee" className="block text-sm font-medium text-gray-700 mb-1">
+              Locker Fee
+            </label>
+            <input
+              type="number"
+              id="lockerFee"
+              name="lockerFee"
+              value={formData.lockerFee}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+            />
+          </div>
+        )}
         <div>
           <label htmlFor="totalFee" className="block text-sm font-medium text-gray-700 mb-1">
-            {isFeeReadOnly ? 'Total Fee (Auto-calculated) *' : 'Total Fee *'}
+            {isFeeReadOnly ? 'Membership Fee (Auto-calculated) *' : 'Membership Fee *'}
           </label>
           <input
             type="number"

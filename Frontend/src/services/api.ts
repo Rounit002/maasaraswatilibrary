@@ -63,6 +63,7 @@ interface Student {
   aadhaarBackUrl?: string | null;
   lockerId?: number | null;
   lockerNumber?: string | null;
+  lockerFee?: number;
   createdAt: string;
   assignments?: Array<{
     seatId: number;
@@ -503,7 +504,7 @@ const api = {
 
   addStudent: async (studentData: {
     name: string;
-    email: string;
+    email?: string;
     phone: string;
     address: string;
     registrationNumber?: string;
@@ -512,18 +513,20 @@ const api = {
     branchId: number;
     membershipStart: string;
     membershipEnd: string;
+    shiftIds: number[];
+    seatId: number | null;
+    lockerId?: number | null;
+    lockerFee?: number;
     totalFee: number;
     amountPaid: number;
-    shiftIds: number[];
-    seatId?: number;
-    lockerId?: number;
-    cash?: number;
-    online?: number;
-    securityMoney?: number;
-    remark?: string | null;
+    cash: number;
+    online: number;
+    securityMoney: number;
+    remark: string;
     profileImageUrl?: string | null;
     aadhaarFrontUrl?: string | null;
     aadhaarBackUrl?: string | null;
+    discount?: number;
   }): Promise<{ student: Student }> => {
     try {
       const normalizedData = {
@@ -568,6 +571,7 @@ const api = {
       shiftIds: number[];
       seatId: number | null;
       lockerId?: number | null;
+      lockerFee?: number;
       cash: number;
       online: number;
       securityMoney: number;
@@ -602,6 +606,7 @@ const api = {
       shiftIds: number[];
       seatId?: number;
       lockerId?: number;
+      lockerFee?: number;
       totalFee: number;
       cash?: number;
       online?: number;
